@@ -293,8 +293,16 @@ justificar explicitamente em vez de ignorar.
   que mudou, o motivo e os impactos.
 
 ### Git
-- Commits pequenos e objetivos: `feat: create board model`,
-  `feat: add board authorization policy`, `fix: prevent unauthorized board access`.
+- **Mensagens de commit em português (pt-BR).** O prefixo do tipo permanece em
+  inglês (`feat`, `fix`, `refactor`, `chore`, `docs`, `test`); a descrição é em
+  português, começando em minúscula e sem ponto final.
+  ```
+  feat: cria o model Board
+  feat: adiciona a policy de autorização das pranchetas
+  fix: impede acesso a prancheta de outro usuário
+  refactor: extrai a geração de token para uma Action
+  ```
+- Commits pequenos e objetivos: um commit por mudança coesa.
 - Branches: `feature/nome-da-funcionalidade`, `fix/nome-do-problema`.
 
 ### Autoria dos commits — regra obrigatória

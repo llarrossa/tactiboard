@@ -433,11 +433,28 @@ Bom:
 
 Commits devem ser pequenos e objetivos.
 
+### Idioma
+
+As mensagens de commit são escritas em **português (pt-BR)**.
+
+O prefixo do tipo permanece em inglês, por ser convenção consolidada:
+`feat`, `fix`, `refactor`, `chore`, `docs`, `test`.
+
+A descrição vem em português, começando em minúscula e sem ponto final.
+
 Exemplos:
 
-- feat: create board model
-- feat: add board authorization policy
-- fix: prevent unauthorized board access
+- feat: cria o model Board
+- feat: adiciona a policy de autorização das pranchetas
+- fix: impede acesso a prancheta de outro usuário
+- refactor: extrai a geração de token para uma Action
+- test: cobre as permissões de edição de prancheta
+
+Evitar:
+
+- feat: create board model (descrição em inglês)
+- Feat: Cria o model Board. (maiúscula e ponto final)
+- ajustes (sem prefixo de tipo e vago demais)
 
 ---
 
