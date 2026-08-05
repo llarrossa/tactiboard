@@ -26,6 +26,8 @@ Cada fase deve:
 
 # 3. Fase 0 — Preparação do Projeto
 
+**Status: concluída em 2026-08-05.**
+
 ## Objetivo
 
 Criar a base inicial do ambiente de desenvolvimento.
@@ -34,24 +36,45 @@ Criar a base inicial do ambiente de desenvolvimento.
 
 ## Tarefas
 
-- Criar projeto Laravel.
-- Configurar ambiente local com Laravel Sail e Docker.
-- Configurar banco de dados.
-- Configurar controle de versão.
-- Configurar variáveis de ambiente.
-- Instalar dependências iniciais.
-- Configurar Pest.
-- Configurar Tailwind CSS.
+- [x] Criar projeto Laravel.
+- [x] Configurar ambiente local com Laravel Sail e Docker.
+- [x] Configurar banco de dados.
+- [x] Configurar controle de versão.
+- [x] Configurar variáveis de ambiente.
+- [x] Instalar dependências iniciais.
+- [x] Configurar Pest.
+- [x] Configurar Tailwind CSS.
 
 ---
 
 ## Critérios de conclusão
 
-- Aplicação Laravel executando localmente através do Sail.
-- Banco conectado.
-- Estrutura inicial funcionando.
-- Suíte de testes executando com Pest.
-- Projeto versionado no Git.
+- [x] Aplicação Laravel executando localmente através do Sail.
+- [x] Banco conectado.
+- [x] Estrutura inicial funcionando.
+- [x] Suíte de testes executando com Pest.
+- [x] Projeto versionado no Git.
+
+---
+
+## Resultado
+
+| Item | Versão / estado |
+|---|---|
+| Laravel | 12.65.0 |
+| PHP | 8.4.24 (container Sail) |
+| Banco | MySQL 8.4, schema `tactiboard` conectado, 3 migrations aplicadas |
+| Testes | Pest 4.7.8, suíte executando |
+| Frontend | Tailwind CSS 4.3.3 via Vite 7, build gerado |
+| Formatação | Laravel Pint sem violações |
+| Git | Repositório em `main`, publicado em `git@github.com:llarrossa/tactiboard.git` |
+| Aplicação | `http://localhost:8080` |
+
+Particularidades de ambiente (portas, exposição de rede e uid do container)
+estão documentadas em `04-technical-architecture.md` §18.1 e §18.2.
+
+Não foi instalado Livewire nem Breeze nesta fase — ambos entram a partir da
+Fase 1, conforme decisão registrada em `CLAUDE.md` §10.
 
 ---
 

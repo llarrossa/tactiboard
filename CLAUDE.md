@@ -317,13 +317,29 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-05):** o repositório contém apenas `/docs` e este
-arquivo. A aplicação Laravel ainda **não foi criada** e o projeto ainda não está
-versionado em Git. Próximo passo: **Fase 0**.
+**Estado atual (2026-08-05):** **Fase 0 concluída.** A aplicação Laravel 12.65.0
+existe e roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está conectado,
+a suíte Pest executa e o projeto está versionado em Git, publicado em
+`git@github.com:llarrossa/tactiboard.git` (branch `main`).
+
+Nenhuma funcionalidade de produto foi implementada — não há auth, `boards`,
+editor nem compartilhamento. Próximo passo: **Fase 1** (Breeze, layout base,
+dashboard, perfil).
+
+**Particularidades do ambiente desta máquina** (ver `docs/04` §18):
+- A aplicação responde em `http://localhost:8080`, não na porta 80.
+- As portas são publicadas apenas em `127.0.0.1`. Para acessar de fora, use
+  `ssh -L 8080:127.0.0.1:8080 <host>`.
+- O container roda como uid 1337 (`WWWUSER`/`WWWGROUP` no `.env`). O Sail lê o
+  `.env` antes de aplicar seus defaults, então não é preciso exportar nada —
+  mas se o `.env` for recriado sem essas chaves, o container falha ao subir a
+  partir de uma sessão root.
+- Os arquivos pertencem ao uid 1337. Se o Git recusar com *dubious ownership*,
+  rodar uma vez: `git config --global --add safe.directory /root/tactiboard`.
 
 | Fase | Objetivo | Critério de conclusão |
 |---|---|---|
-| **0** | Preparação: criar projeto Laravel, Sail + Docker, banco, Git, Pest, Tailwind | App roda via Sail, banco conectado, suíte Pest executando, projeto versionado |
+| **0** ✅ | Preparação: criar projeto Laravel, Sail + Docker, banco, Git, Pest, Tailwind | **Concluída** — app roda via Sail, banco conectado, suíte Pest executando, projeto versionado |
 | **1** | Fundação: auth (Breeze), layout base, navbar, dashboard, perfil | Usuário cria conta, entra, acessa dashboard, sai |
 | **2** | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | Usuário gerencia as próprias pranchetas |
 | **3** | Editor tático: campo, elementos, manipulação, persistência JSON | Usuário cria jogada, salva, reabre mantendo o estado |
@@ -338,7 +354,6 @@ Detalhes e tarefas de cada fase: `docs/05-development-roadmap.md`.
 
 ## 9. Comandos Úteis
 
-> A aplicação ainda não existe — estes comandos valem a partir da Fase 0.
 > **Todo comando roda através do Sail.** Criar o alias `alias sail='./vendor/bin/sail'`
 > evita repetir o caminho; abaixo o caminho vem completo por clareza.
 
@@ -358,7 +373,8 @@ cp .env.example .env
 ./vendor/bin/sail artisan tinker
 ./vendor/bin/sail logs -f          # acompanhar logs dos containers
 ```
-A aplicação fica em `http://localhost` (porta definida por `APP_PORT` no `.env`).
+A aplicação fica em `http://localhost:8080` (porta definida por `APP_PORT` e
+interface por `APP_BIND`, ambos no `.env`).
 
 ### Banco de dados
 ```bash
@@ -404,6 +420,17 @@ Decisões confirmadas em 2026-08-05. Não reabrir sem solicitação.
 | Framework de testes | **Pest** (padrão do Laravel 12) | `docs/04` §12, `docs/06` §13 |
 | Ambiente de desenvolvimento | **Laravel Sail sobre Docker** | `docs/04` §18, `docs/05` Fase 0 |
 | Compartilhamento | `visibility` = estado público/privado; `shared_links.token` = acesso | `docs/03` §6.2 e §7.2, `docs/05` Fase 4 |
+
+Decisões adicionais confirmadas na Fase 0:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Versão do Laravel | **12.x fixado** (12.65.0) | O 13.x já existe, mas toda a documentação foi escrita para o 12. Não atualizar sem solicitação |
+| Versão do Pest | **4.x** (4.7.8) | O Pest 5 exige `symfony/process ^8`, e o Laravel 12 fixa `^7.2` — são incompatíveis. O Pest 5 pressupõe Laravel 13 |
+| Versão do PHP | **8.4** (`composer.json` exige `^8.4`) | Atende `docs/04` §2. O Sail 1.65 sugeriria 8.5 por padrão; fixado em 8.4 explicitamente |
+| Starter kit de auth | **Breeze** com Blade + Alpine + Tailwind, na Fase 1 | Entrega exatamente a stack de `docs/04` §6, sem arrastar Volt/Flux |
+| Livewire | **Não instalado na Fase 0** | Só entra quando existir o primeiro componente (Fase 2/3) |
+| Publicação de portas | Somente em `127.0.0.1` (`APP_BIND`) | `docs/04` §18 |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).

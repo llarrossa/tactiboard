@@ -455,6 +455,74 @@ Exemplo:
 
 ---
 
+## 18.1 Portas e exposição de rede
+
+Decisão registrada na Fase 0 (2026-08-05).
+
+As portas padrão do Sail não puderam ser usadas na máquina de desenvolvimento:
+a porta 80 já era servida por outro container e a 3306 por um MySQL local.
+
+Configuração adotada, definida no `.env`:
+
+| Variável | Valor | Motivo |
+|---|---|---|
+| `APP_PORT` | `8080` | A porta 80 está ocupada |
+| `FORWARD_DB_PORT` | `33061` | A porta 3306 está ocupada |
+| `APP_BIND` | `127.0.0.1` | Interface em que a aplicação e o Vite são publicados |
+
+O `APP_BIND` controla apenas a aplicação e o Vite. A porta do MySQL está fixada
+em `127.0.0.1` diretamente no `compose.yaml`, de propósito: nada fora do host
+precisa alcançar o banco, e a aplicação o acessa pela rede interna `sail`.
+Mudar `APP_BIND` para `0.0.0.0` **não** expõe o banco.
+
+`DB_HOST=mysql` e `DB_PORT=3306` permanecem inalterados: são endereços internos
+da rede Docker `sail`. Só muda a porta publicada no host.
+
+### Por que publicar apenas em loopback
+
+O Docker insere suas regras de encaminhamento **antes** da cadeia `INPUT` do
+UFW. Uma porta publicada em `0.0.0.0` fica acessível pela internet mesmo com o
+firewall configurado para bloquear — o que foi confirmado na prática: o MySQL
+respondia a conexões vindas do IP público com `root` e a senha padrão do Sail,
+e a aplicação respondia com `APP_DEBUG=true`, o que expõe o conteúdo do `.env`
+nas páginas de erro.
+
+Por isso todas as portas são publicadas em `127.0.0.1`. Para acessar a
+aplicação de outra máquina, usar túnel SSH:
+
+```
+ssh -L 8080:127.0.0.1:8080 <host>
+```
+
+Expor de verdade exige mudar `APP_BIND` para `0.0.0.0` deliberadamente — e,
+nesse caso, revisar antes `APP_DEBUG` e a senha do banco.
+
+---
+
+## 18.2 Usuário do container
+
+O container da aplicação roda como uid **1337** (`WWWUSER`/`WWWGROUP` no
+`.env`), e os arquivos do projeto pertencem a esse uid.
+
+O padrão do Sail é usar o uid de quem executa o comando. Como o ambiente desta
+máquina opera como root, o valor seria `0` e o `usermod -u 0 sail` executado na
+inicialização do container falharia, pois o uid 0 já pertence ao root.
+
+O script do Sail carrega o `.env` antes de aplicar seus próprios defaults, então
+basta manter `WWWUSER` e `WWWGROUP` definidos ali — nenhuma exportação manual é
+necessária. Se o `.env` for recriado a partir de um `.env.example` sem essas
+chaves, o container volta a falhar ao subir.
+
+Consequência prática adicional: o Git pode recusar operações com *dubious
+ownership*, porque o dono dos arquivos difere do usuário da sessão. Resolver uma
+vez com:
+
+```
+git config --global --add safe.directory /root/tactiboard
+```
+
+---
+
 # 19. Qualidade de Código
 
 Regras:
