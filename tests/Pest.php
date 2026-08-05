@@ -19,6 +19,13 @@ pest()->extend(TestCase::class)
     ->in('Feature');
 
 /*
+ * Os testes unitarios tambem sobem a aplicacao, mas sem banco: classes isoladas
+ * como os enums usam o tradutor em label(), e o tradutor precisa do container.
+ * O RefreshDatabase continua restrito a Feature, entao Unit segue rapido.
+ */
+pest()->extend(TestCase::class)->in('Unit');
+
+/*
 |--------------------------------------------------------------------------
 | Expectations
 |--------------------------------------------------------------------------

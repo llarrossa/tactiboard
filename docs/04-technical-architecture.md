@@ -359,6 +359,25 @@ A primeira versão será construída utilizando:
 
 ---
 
+## 8.1 Quando o Livewire entra
+
+Decisão registrada na Fase 2 (2026-08-05).
+
+O Livewire **ainda não está instalado**. O CRUD de pranchetas da Fase 2 é um
+fluxo de formulários sem reatividade: controller fino, Form Request, Action e
+Blade resolvem inteiramente. Instalar o Livewire para isso adicionaria uma
+dependência sem necessidade real, contra `docs/04` §20 e `CLAUDE.md` §3, regra 5.
+
+Ele entra na **Fase 3**, com o editor tático — ali existe estado a sincronizar
+entre navegador e servidor, que é exatamente o problema que o Livewire resolve.
+Os componentes previstos (`BoardEditor`, `FieldCanvas`, `Toolbar`) pertencem a
+essa fase.
+
+O Alpine.js já está em uso desde a Fase 1, para interação local: o menu da
+navbar e os modais de confirmação.
+
+---
+
 # 9. Persistência do Canvas
 
 O conteúdo visual da prancheta será armazenado em JSON.

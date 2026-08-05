@@ -11,6 +11,7 @@ return [
     'confirmed' => 'A confirmação de :attribute não confere.',
     'current_password' => 'A senha informada está incorreta.',
     'email' => 'Informe um :attribute válido.',
+    'enum' => 'A :attribute selecionada é inválida.',
     'lowercase' => 'O campo :attribute deve conter apenas letras minúsculas.',
     'max' => [
         'string' => 'O campo :attribute não pode ter mais que :max caracteres.',
@@ -30,11 +31,14 @@ return [
     'unique' => 'Este :attribute já está em uso.',
 
     'attributes' => [
+        'category' => 'categoria',
         'current_password' => 'senha atual',
+        'description' => 'descrição',
         'email' => 'e-mail',
         'name' => 'nome',
         'password' => 'senha',
         'password_confirmation' => 'confirmação de senha',
+        'title' => 'nome',
     ],
 
 ];
