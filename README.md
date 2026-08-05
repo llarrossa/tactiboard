@@ -39,7 +39,7 @@ cp .env.example .env
 Instale as dependências PHP usando um container (o host não precisa de PHP):
 
 ```bash
-docker run --rm -u root -v "$(pwd)":/app -w /app \
+docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd)":/app -w /app \
   laravelsail/php84-composer:latest composer install
 ```
 
@@ -59,6 +59,12 @@ A aplicação fica disponível em <http://localhost:8080>.
 > `APP_PORT=8080` e `FORWARD_DB_PORT=33061`. As portas são publicadas apenas em
 > `127.0.0.1` (`APP_BIND`); para acessar de outra máquina, use um túnel SSH:
 > `ssh -L 8080:127.0.0.1:8080 <host>`.
+>
+> **Se você trabalha como root nesta máquina**, descomente `SUPERVISOR_PHP_USER`
+> e `APP_USER` no `.env` antes de subir os containers. Sem isso a aplicação
+> responde 500 e o Git recusa operações com *dubious ownership*. O porquê está
+> em [`docs/04-technical-architecture.md`](docs/04-technical-architecture.md)
+> §18.2.
 
 ---
 

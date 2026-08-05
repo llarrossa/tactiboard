@@ -501,25 +501,40 @@ nesse caso, revisar antes `APP_DEBUG` e a senha do banco.
 
 ## 18.2 Usuário do container
 
-O container da aplicação roda como uid **1337** (`WWWUSER`/`WWWGROUP` no
-`.env`), e os arquivos do projeto pertencem a esse uid.
+Por padrão, o Sail executa o PHP como o usuário interno `sail`, alinhando o uid
+dele ao do usuário do host. Isso funciona bem quando a sessão do host é um
+usuário comum.
 
-O padrão do Sail é usar o uid de quem executa o comando. Como o ambiente desta
-máquina opera como root, o valor seria `0` e o `usermod -u 0 sail` executado na
-inicialização do container falharia, pois o uid 0 já pertence ao root.
+Quando a sessão do host é **root**, esse padrão quebra: o uid 0 já pertence ao
+root dentro do container, o `usermod -u 0 sail` falha, e qualquer alternativa
+(como fixar o container em outro uid) cria um descompasso de dono entre host e
+container. Esse descompasso tem duas consequências ruins:
 
-O script do Sail carrega o `.env` antes de aplicar seus próprios defaults, então
-basta manter `WWWUSER` e `WWWGROUP` definidos ali — nenhuma exportação manual é
-necessária. Se o `.env` for recriado a partir de um `.env.example` sem essas
-chaves, o container volta a falhar ao subir.
+- O container não consegue escrever nos arquivos do host, e a aplicação passa a
+  responder **500** por não escrever em `storage/`.
+- O Git recusa operar no repositório com *dubious ownership*, porque o dono dos
+  arquivos difere do usuário que executa o comando. Essa proteção existe para
+  impedir que um repositório de terceiros execute *hooks* como root.
 
-Consequência prática adicional: o Git pode recusar operações com *dubious
-ownership*, porque o dono dos arquivos difere do usuário da sessão. Resolver uma
-vez com:
+A solução adotada é executar o PHP como root dentro do container, alinhando os
+dois lados. Duas variáveis são necessárias, ambas definidas apenas no `.env`
+local (que não é versionado):
 
-```
-git config --global --add safe.directory /root/tactiboard
-```
+| Variável | Cobre |
+|---|---|
+| `SUPERVISOR_PHP_USER=root` | O servidor web gerenciado pelo supervisord |
+| `APP_USER=root` | Os comandos avulsos: `sail artisan`, `sail composer`, `sail pest`, `sail npm` |
+
+Definir apenas uma delas resolve pela metade e o descompasso reaparece.
+
+O `compose.yaml` versionado mantém o padrão do Sail
+(`SUPERVISOR_PHP_USER: '${SUPERVISOR_PHP_USER:-sail}'`), e o `.env.example`
+traz as duas linhas comentadas. Assim, em máquinas com usuário comum o
+comportamento padrão do Sail continua valendo, sem efeito colateral — a
+configuração de root é uma escolha por máquina, não do projeto.
+
+Com isso, o Git funciona normalmente, **sem** necessidade de
+`git config --global --add safe.directory`.
 
 ---
 

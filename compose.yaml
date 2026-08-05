@@ -19,6 +19,12 @@ services:
             - '${APP_BIND:-127.0.0.1}:${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
             WWWUSER: '${WWWUSER}'
+            # Usuario que executa o PHP dentro do container. O padrao do Sail
+            # ('sail') vale para qualquer maquina. Onde a sessao do host for
+            # root, defina SUPERVISOR_PHP_USER=root no .env local: isso alinha
+            # o dono dos arquivos entre host e container e evita o descompasso
+            # de uid que quebra o Git com "dubious ownership".
+            SUPERVISOR_PHP_USER: '${SUPERVISOR_PHP_USER:-sail}'
             LARAVEL_SAIL: 1
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'

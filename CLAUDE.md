@@ -330,12 +330,11 @@ dashboard, perfil).
 - A aplicação responde em `http://localhost:8080`, não na porta 80.
 - As portas são publicadas apenas em `127.0.0.1`. Para acessar de fora, use
   `ssh -L 8080:127.0.0.1:8080 <host>`.
-- O container roda como uid 1337 (`WWWUSER`/`WWWGROUP` no `.env`). O Sail lê o
-  `.env` antes de aplicar seus defaults, então não é preciso exportar nada —
-  mas se o `.env` for recriado sem essas chaves, o container falha ao subir a
-  partir de uma sessão root.
-- Os arquivos pertencem ao uid 1337. Se o Git recusar com *dubious ownership*,
-  rodar uma vez: `git config --global --add safe.directory /root/tactiboard`.
+- O PHP roda como **root** dentro do container, via `SUPERVISOR_PHP_USER=root`
+  e `APP_USER=root` no `.env` local. Isso alinha o dono dos arquivos entre host
+  e container. Sem as duas, a aplicação responde 500 e o Git passa a recusar
+  operações com *dubious ownership*. Detalhes em `docs/04` §18.2.
+- O `git` funciona normalmente, sem `safe.directory` e sem contornos.
 
 | Fase | Objetivo | Critério de conclusão |
 |---|---|---|
