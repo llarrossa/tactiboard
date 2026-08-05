@@ -1,0 +1,499 @@
+# TactiBoard — Coding Guidelines
+
+## 1. Objetivo do Documento
+
+Este documento define os padrões de desenvolvimento utilizados no TactiBoard.
+
+O objetivo é garantir:
+
+- Código consistente.
+- Fácil manutenção.
+- Boa legibilidade.
+- Facilidade de evolução.
+- Padronização durante o desenvolvimento.
+
+Todas as implementações devem seguir estas diretrizes, incluindo código criado manualmente ou por ferramentas de inteligência artificial.
+
+---
+
+# 2. Princípios Gerais
+
+## Código simples antes de código complexo
+
+A solução mais simples que resolve corretamente o problema deve ser priorizada.
+
+Evitar:
+
+- Abstrações desnecessárias.
+- Design Patterns sem necessidade.
+- Arquiteturas complexas para problemas simples.
+
+---
+
+## Código deve refletir o domínio do produto
+
+Nomes e estruturas devem representar conceitos reais do sistema.
+
+Exemplo:
+
+Preferir:
+
+- CreateBoardAction
+- GenerateSharedLinkAction
+
+Evitar:
+
+- ProcessDataAction
+- HandleInformationService
+- ManagerClass
+
+---
+
+## Não duplicar lógica
+
+Quando uma regra de negócio for utilizada em vários locais, ela deve ser extraída para uma classe reutilizável.
+
+---
+
+# 3. Organização de Código
+
+A estrutura principal seguirá:
+
+```
+app/
+
+├── Actions/
+├── Enums/
+├── Http/
+│ ├── Controllers/
+│ ├── Requests/
+│ └── Resources/
+├── Livewire/
+├── Models/
+├── Policies/
+├── Services/
+├── Jobs/
+├── Events/
+├── Listeners/
+└── Notifications/
+```
+
+---
+
+# 4. Controllers
+
+## Responsabilidade
+
+Controllers devem ser responsáveis por:
+
+- Receber requisições.
+- Chamar classes responsáveis pela operação.
+- Retornar respostas.
+
+---
+
+## Não permitido
+
+Controllers não devem conter:
+
+- Regras complexas.
+- Cálculos extensos.
+- Consultas complexas.
+- Processamentos grandes.
+
+Exemplo a evitar:
+
+```php
+public function store(Request $request)
+{
+    // validação
+    // criação de usuário
+    // regras de negócio
+    // envio de email
+    // cálculos
+}
+```
+
+---
+
+## Preferir
+
+```php
+public function store(CreateBoardRequest $request)
+{
+    $board = $this->createBoardAction->execute(
+        $request->validated()
+    );
+
+    return redirect()->route('boards.show', $board);
+}
+```
+
+---
+
+# 5. Models
+
+## Responsabilidade
+
+Models devem representar entidades do banco.
+
+Devem conter:
+
+- Relacionamentos.
+- Casts.
+- Scopes simples.
+- Regras diretamente relacionadas ao próprio modelo.
+
+---
+
+## Evitar
+
+Não transformar Models em classes gigantes.
+
+Evitar colocar:
+
+- Fluxos completos.
+- Integrações externas.
+- Processamentos complexos.
+
+---
+
+# 6. Form Requests
+
+Toda validação de entrada deve utilizar Form Requests.
+
+Exemplos:
+
+- CreateBoardRequest
+- UpdateBoardRequest
+- UpdateCanvasRequest
+
+Benefícios:
+
+- Controllers menores.
+- Validações reutilizáveis.
+- Código mais organizado.
+
+---
+
+# 7. Actions
+
+## Objetivo
+
+Actions representam operações específicas do sistema.
+
+Uma Action deve responder:
+
+"O que o usuário está tentando fazer?"
+
+---
+
+## Exemplos
+
+- CreateBoardAction
+- UpdateBoardCanvasAction
+- DeleteBoardAction
+- GenerateSharedLinkAction
+
+---
+
+## Regras
+
+Uma Action deve:
+
+- Ter uma responsabilidade clara.
+- Executar uma operação completa.
+- Ser facilmente testável.
+
+---
+
+# 8. Services
+
+Services devem ser utilizados quando existir lógica complexa ou integrações.
+
+Exemplos:
+
+- CanvasExportService
+- ImageGenerationService
+- NotificationService
+
+Não criar Services apenas para substituir Controllers.
+
+---
+
+# 9. Livewire Components
+
+O frontend interativo será desenvolvido utilizando Livewire.
+
+---
+
+## Regras
+
+Componentes devem possuir responsabilidades pequenas.
+
+Exemplos:
+
+- BoardEditor
+- BoardList
+- BoardForm
+- Toolbar
+
+Evitar:
+
+Um componente contendo:
+
+- Toda página.
+- Toda regra.
+- Todo comportamento.
+
+---
+
+# 10. JavaScript e Alpine.js
+
+Alpine.js deve ser utilizado para comportamentos pequenos de interface.
+
+Exemplos:
+
+- Abrir menus.
+- Controlar estados simples.
+- Interações locais.
+
+Não utilizar JavaScript puro para substituir funcionalidades que pertencem ao Livewire.
+
+---
+
+# 11. Banco de Dados
+
+## Migrations
+
+Todas alterações no banco devem utilizar migrations.
+
+Nunca alterar banco manualmente.
+
+---
+
+## Nomes
+
+Utilizar padrão Laravel:
+
+Tabelas:
+
+- boards
+- shared_links
+
+Models:
+
+- Board
+- SharedLink
+
+---
+
+## Relacionamentos
+
+Sempre definir relacionamentos nos Models.
+
+Exemplo:
+
+```php
+public function boards()
+{
+    return $this->hasMany(Board::class);
+}
+```
+
+---
+
+# 12. Banco JSON
+
+O campo canvas_data utiliza JSON.
+
+Regras:
+
+- Manter estrutura documentada.
+- Evitar dados redundantes.
+- Não armazenar informações que devem ser entidades próprias.
+
+---
+
+# 13. Testes
+
+Toda funcionalidade relevante deve possuir testes.
+
+O framework utilizado é o Pest.
+
+Executar através do Sail:
+
+```
+./vendor/bin/sail pest
+```
+
+---
+
+## Feature Tests
+
+Utilizar para:
+
+- Fluxos de usuário.
+- Requisições HTTP.
+- Permissões.
+
+Exemplos:
+
+- CreateBoardTest
+- ShareBoardTest
+
+---
+
+## Unit Tests
+
+Utilizar para:
+
+- Classes isoladas.
+- Regras específicas.
+
+Exemplos:
+
+- CanvasParserTest
+
+---
+
+# 14. Testes obrigatórios
+
+Toda nova funcionalidade deve validar:
+
+- Cenário de sucesso.
+- Cenário de erro.
+- Controle de permissões.
+
+---
+
+# 15. Tratamento de Erros
+
+Erros devem ser tratados de forma clara.
+
+Evitar:
+
+- Silenciar exceções.
+- Retornar mensagens genéricas sem contexto.
+
+---
+
+# 16. Nomenclatura
+
+## Classes
+
+PascalCase:
+
+CreateBoardAction
+
+---
+
+## Métodos
+
+camelCase:
+
+createBoard()
+
+---
+
+## Variáveis
+
+camelCase:
+
+- $boardData
+- $userId
+
+---
+
+# 17. Comentários
+
+Comentários devem explicar decisões complexas.
+
+Evitar comentários óbvios.
+
+Ruim:
+
+```php
+// cria usuário
+$user = User::create();
+```
+
+Bom:
+
+```php
+// Mantemos o canvas como JSON para permitir evolução do editor
+// sem criar múltiplas tabelas para cada tipo de elemento.
+```
+
+---
+
+# 18. Git
+
+## Commits
+
+Commits devem ser pequenos e objetivos.
+
+Exemplos:
+
+- feat: create board model
+- feat: add board authorization policy
+- fix: prevent unauthorized board access
+
+---
+
+## Autoria dos commits
+
+Commits não devem incluir ferramentas de IA como coautoras.
+
+A regra completa está definida em `07-ai-development-guide.md`, seção 16 — Commits e Autoria.
+
+---
+
+## Branches
+
+Utilizar:
+
+- feature/nome-da-funcionalidade
+- fix/nome-do-problema
+
+---
+
+# 19. Código gerado por IA
+
+Quando utilizar ferramentas como Claude Code:
+
+A IA deve:
+
+- Ler todos os documentos da pasta docs.
+- Seguir os padrões definidos.
+- Não alterar arquitetura sem aprovação.
+- Criar testes junto com funcionalidades.
+- Explicar decisões relevantes.
+
+A IA não deve:
+
+- Criar funcionalidades fora do roadmap.
+- Introduzir bibliotecas sem necessidade.
+- Refatorar grandes áreas sem solicitação.
+- Ignorar padrões existentes.
+
+---
+
+# 20. Revisão antes de finalizar tarefas
+
+Antes de considerar uma tarefa concluída:
+
+Verificar:
+
+- Código segue padrões.
+- Testes passam.
+- Não existe duplicação.
+- Não existem erros de sintaxe.
+- Banco está consistente.
+- Documentação está atualizada quando necessário.
+
+---
+
+# 21. Objetivo Final
+
+O objetivo destas regras é manter o TactiBoard como um projeto profissional, organizado e preparado para crescer de um MVP para uma plataforma completa de análise tática de futebol.
