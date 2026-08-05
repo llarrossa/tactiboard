@@ -5,7 +5,11 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/* O Breeze traz o plugin de forms configurado para o Tailwind 3 (tailwind.config.js).
+   Mantemos o Tailwind 4 decidido na Fase 0, onde a configuracao vive no proprio CSS. */
+@plugin '@tailwindcss/forms';
+
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
