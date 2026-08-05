@@ -355,6 +355,25 @@ Exemplos:
 
 - CanvasParserTest
 
+O diretório `tests/Unit` está vazio até existir a primeira classe isolada para
+cobrir. Ele contém um `.gitkeep` porque a suíte **não roda** se o diretório
+declarado no `phpunit.xml` não existir — a execução aborta com
+`Test directory not found`.
+
+---
+
+## Idioma das descrições
+
+As descrições dos testes são escritas em **português**, como o restante da
+documentação do projeto:
+
+```php
+test('um usuario nao entra com a senha errada', function () { ... });
+```
+
+Os testes gerados pelo Breeze na Fase 1 foram traduzidos para manter a suíte
+coerente em um só idioma.
+
 ---
 
 # 14. Testes obrigatórios

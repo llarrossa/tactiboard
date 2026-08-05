@@ -80,6 +80,8 @@ Fase 1, conforme decisão registrada em `CLAUDE.md` §10.
 
 # 4. Fase 1 — Fundação da Aplicação
 
+**Status: concluída em 2026-08-05.**
+
 ## Objetivo
 
 Criar a estrutura base utilizada por todo o sistema.
@@ -92,10 +94,10 @@ Criar a estrutura base utilizada por todo o sistema.
 
 Implementar:
 
-- Cadastro.
-- Login.
-- Logout.
-- Recuperação de senha.
+- [x] Cadastro.
+- [x] Login.
+- [x] Logout.
+- [x] Recuperação de senha.
 
 ---
 
@@ -103,10 +105,10 @@ Implementar:
 
 Criar:
 
-- Navbar.
-- Área autenticada.
-- Dashboard inicial.
-- Componentes visuais básicos.
+- [x] Navbar.
+- [x] Área autenticada.
+- [x] Dashboard inicial.
+- [x] Componentes visuais básicos.
 
 ---
 
@@ -114,8 +116,8 @@ Criar:
 
 Implementar:
 
-- Perfil básico.
-- Dados do usuário.
+- [x] Perfil básico.
+- [x] Dados do usuário.
 
 ---
 
@@ -123,10 +125,53 @@ Implementar:
 
 Usuário consegue:
 
-- Criar uma conta.
-- Entrar no sistema.
-- Acessar dashboard.
-- Encerrar sessão.
+- [x] Criar uma conta.
+- [x] Entrar no sistema.
+- [x] Acessar dashboard.
+- [x] Encerrar sessão.
+
+---
+
+## Resultado
+
+| Item | Estado |
+|---|---|
+| Autenticação | Laravel Breeze 2.4, stack Blade + Alpine + Tailwind |
+| Rotas | `/`, `/dashboard`, `/profile`, além das rotas de auth em `routes/auth.php` |
+| Camadas | Validação em Form Requests; `RegisterUserAction` para o cadastro |
+| Idioma | Interface e mensagens em pt-BR (`APP_LOCALE=pt_BR`, `lang/pt_BR`) |
+| Testes | 43 testes, 134 asserções, todos passando |
+| Formatação | Laravel Pint sem violações |
+| Banco | Sem migrations novas — `users`, `password_reset_tokens` e `sessions` já existiam |
+
+Nenhuma migration foi criada nesta fase: a migration padrão do Laravel
+(`0001_01_01_000000_create_users_table`) já cria as três tabelas que o Breeze usa.
+
+### Ajustes feitos sobre o scaffolding do Breeze
+
+O Breeze entrega código funcional, mas não alinhado a todas as regras deste
+projeto. Foram feitos quatro ajustes, registrados aqui para que não sejam
+desfeitos por engano em uma reinstalação:
+
+1. **Tailwind 4 mantido.** O `breeze:install` rebaixa o projeto para o Tailwind 3
+   (cria `tailwind.config.js` e `postcss.config.js`, troca o `app.css` pelas
+   diretivas `@tailwind`). A Fase 0 fixou o Tailwind 4, então a configuração foi
+   restaurada para o modelo CSS-first, com `@plugin '@tailwindcss/forms'`.
+2. **Validação movida para Form Requests.** Os controllers do Breeze validam em
+   linha; `docs/06` §6 exige Form Requests. Ver `04-technical-architecture.md` §6.1.
+3. **Cadastro extraído para uma Action.** `RegisterUserAction` concentra a criação
+   do usuário, seguindo o padrão de `docs/06` §7.
+4. **Logo substituído.** O `x-application-logo` vinha com a marca do Laravel; foi
+   trocado por um campo de futebol, a marca do produto.
+
+### Fora do escopo desta fase
+
+- **Verificação de e-mail:** o Breeze instala as rotas e telas, mas o recurso está
+  **inativo** — o model `User` não implementa `MustVerifyEmail`. As rotas foram
+  mantidas para não precisar reinstalá-las caso o recurso seja adotado. Não faz
+  parte do MVP (`docs/02` RF-001).
+- **Lista de pranchetas no dashboard:** RF-004 depende da entidade `Board`, que
+  entra na Fase 2. O dashboard desta fase é apenas a casca autenticada.
 
 ---
 

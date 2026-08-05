@@ -325,14 +325,26 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-05):** **Fase 0 concluída.** A aplicação Laravel 12.65.0
-existe e roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está conectado,
-a suíte Pest executa e o projeto está versionado em Git, publicado em
-`git@github.com:llarrossa/tactiboard.git` (branch `main`).
+**Estado atual (2026-08-05):** **Fases 0 e 1 concluídas.** A aplicação Laravel
+12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está conectado e
+o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
 
-Nenhuma funcionalidade de produto foi implementada — não há auth, `boards`,
-editor nem compartilhamento. Próximo passo: **Fase 1** (Breeze, layout base,
-dashboard, perfil).
+A Fase 1 entregou a fundação: autenticação com Breeze (cadastro, login, logout,
+recuperação de senha), layout base com navbar, dashboard e perfil do usuário —
+tudo em português. A suíte tem **43 testes / 134 asserções**, todos passando, e o
+Pint não acusa violações.
+
+Ainda **não** existem `boards`, editor nem compartilhamento. Próximo passo:
+**Fase 2** (migration `boards`, model, CRUD, `BoardPolicy`).
+
+Pontos da Fase 1 que valem lembrar antes de mexer em auth ou frontend:
+- A validação vive em **Form Requests**, não nos controllers do Breeze — ver
+  `docs/04` §6.1. Reinstalar o Breeze desfaz isso.
+- O **Tailwind 4** foi preservado sobre o scaffolding do Breeze, que rebaixaria
+  para o 3. Não recriar `tailwind.config.js` nem `postcss.config.js`.
+- A **verificação de e-mail** está instalada mas inativa (o `User` não implementa
+  `MustVerifyEmail`). Está fora do MVP.
+- `tests/Unit` guarda um `.gitkeep`: sem o diretório, a suíte inteira aborta.
 
 **Particularidades do ambiente desta máquina** (ver `docs/04` §18):
 - A aplicação responde em `http://localhost:8080`, não na porta 80.
@@ -347,7 +359,7 @@ dashboard, perfil).
 | Fase | Objetivo | Critério de conclusão |
 |---|---|---|
 | **0** ✅ | Preparação: criar projeto Laravel, Sail + Docker, banco, Git, Pest, Tailwind | **Concluída** — app roda via Sail, banco conectado, suíte Pest executando, projeto versionado |
-| **1** | Fundação: auth (Breeze), layout base, navbar, dashboard, perfil | Usuário cria conta, entra, acessa dashboard, sai |
+| **1** ✅ | Fundação: auth (Breeze), layout base, navbar, dashboard, perfil | **Concluída** — usuário cria conta, entra, acessa dashboard, sai |
 | **2** | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | Usuário gerencia as próprias pranchetas |
 | **3** | Editor tático: campo, elementos, manipulação, persistência JSON | Usuário cria jogada, salva, reabre mantendo o estado |
 | **4** | Compartilhamento: `shared_links`, link público, visualização | Pessoa sem conta acessa a análise pelo link, sem editar |
@@ -438,6 +450,18 @@ Decisões adicionais confirmadas na Fase 0:
 | Starter kit de auth | **Breeze** com Blade + Alpine + Tailwind, na Fase 1 | Entrega exatamente a stack de `docs/04` §6, sem arrastar Volt/Flux |
 | Livewire | **Não instalado na Fase 0** | Só entra quando existir o primeiro componente (Fase 2/3) |
 | Publicação de portas | Somente em `127.0.0.1` (`APP_BIND`) | `docs/04` §18 |
+
+Decisões confirmadas na Fase 1:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Idioma da interface | **pt_BR**, com fallback `en` | O público é brasileiro (`docs/01` §4). As views do Breeze usam `__()`, então a tradução ficou em `lang/pt_BR`, sem editar view. Ver `docs/04` §6.2 |
+| Traduções | **Parciais**, cobrindo o que as telas alcançam | O fallback cobre o resto; traduzir o `validation.php` inteiro seria trabalho sem uso. Crescem sob demanda |
+| Tailwind sobre o Breeze | **Manter o 4**, desfazendo o rebaixamento do `breeze:install` | A Fase 0 fixou o 4.3.3; aceitar o downgrade seria uma regressão não documentada. Ver `docs/04` §6.1 |
+| Validação do Breeze | **Movida para Form Requests** | `docs/06` §6 exige. Os controllers do Breeze validam em linha |
+| Action na autenticação | **Só `RegisterUserAction`** | As demais operações são chamadas diretas a `Auth`/`Password`; envolvê-las em Action seria camada sem responsabilidade real (`docs/04` §20) |
+| Verificação de e-mail | **Instalada, mas inativa** | Fora do MVP (`docs/02` RF-001). Manter as rotas evita reinstalar depois |
+| Idioma dos testes | **Português**, inclusive nos testes vindos do Breeze | Coerência com o resto do projeto. Ver `docs/06` §13 |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).

@@ -209,9 +209,9 @@ Não criar Services sem necessidade.
 
 # 6. Autenticação
 
-A autenticação será implementada utilizando:
+A autenticação é implementada utilizando:
 
-- Laravel Breeze
+- Laravel Breeze 2.4, stack Blade + Alpine.js + Tailwind CSS
 
 Funcionalidades:
 
@@ -219,6 +219,107 @@ Funcionalidades:
 - Login.
 - Logout.
 - Recuperação de senha.
+
+Instalado na Fase 1. As rotas ficam em `routes/auth.php`; os controllers em
+`app/Http/Controllers/Auth/`; as telas em `resources/views/auth/`.
+
+---
+
+## 6.1 Adaptações feitas no scaffolding do Breeze
+
+Decisão registrada na Fase 1 (2026-08-05).
+
+O Breeze gera código funcional, porém com padrões que divergem de `docs/06`.
+As adaptações abaixo são deliberadas — reinstalar o Breeze as desfaz.
+
+### Validação em Form Requests
+
+`docs/06` §6 determina que toda validação de entrada use Form Requests. Os
+controllers do Breeze validam em linha, com `$request->validate()` e
+`$request->validateWithBag()`. As regras foram movidas para:
+
+| Form Request | Substitui a validação em |
+|---|---|
+| `Auth\RegisterUserRequest` | `RegisteredUserController@store` |
+| `Auth\SendPasswordResetLinkRequest` | `PasswordResetLinkController@store` |
+| `Auth\ResetPasswordRequest` | `NewPasswordController@store` |
+| `Auth\UpdatePasswordRequest` | `PasswordController@update` |
+| `Auth\ConfirmPasswordRequest` | `ConfirmablePasswordController@store` |
+| `DeleteUserRequest` | `ProfileController@destroy` |
+
+A tela de perfil tem três formulários na mesma página. Os dois que pedem senha
+usam *error bag* próprio (`updatePassword` e `userDeletion`), declarado na
+propriedade `$errorBag` do Form Request, para que o erro de um formulário não
+apareça no outro.
+
+`Auth\LoginRequest` e `ProfileUpdateRequest` já vinham como Form Request e foram
+mantidos como estão.
+
+### Action para o cadastro
+
+`RegisterUserAction` concentra a criação do usuário e o disparo do evento
+`Registered`. O login da sessão fica no controller: a Action não conhece sessão,
+o que a mantém testável e reaproveitável.
+
+As demais operações de autenticação continuam sem Action. Elas são chamadas
+diretas a facades do framework (`Auth`, `Password`) e criar uma camada em volta
+só para uniformizar contrariaria `docs/04` §20 — não criar complexidade antes da
+necessidade.
+
+### Senha sempre com hash explícito
+
+O model `User` tem o cast `password => 'hashed'`, que já protegeria a escrita.
+Ainda assim, os pontos que gravam senha usam `Hash::make()` explicitamente:
+é um caminho de credencial, e uma falha silenciosa ali gravaria senha em texto
+puro. Há um teste dedicado a isso em `RegistrationTest`.
+
+### Tailwind 4 preservado
+
+O `breeze:install` rebaixa o projeto para o Tailwind 3: cria `tailwind.config.js`
+e `postcss.config.js`, adiciona `autoprefixer`/`postcss` e substitui o
+`resources/css/app.css` pelas diretivas `@tailwind`.
+
+A Fase 0 fixou o Tailwind 4. A configuração foi restaurada para o modelo
+CSS-first do Tailwind 4 e os dois arquivos de config foram removidos. O plugin de
+formulários do Breeze continua ativo, agora via `@plugin '@tailwindcss/forms'`
+dentro do `app.css`.
+
+### Verificação de e-mail instalada, porém inativa
+
+O Breeze instala rotas, telas e testes de verificação de e-mail. O recurso está
+**inativo**: o model `User` não implementa `MustVerifyEmail`, então o middleware
+`verified` aplicado em `/dashboard` deixa passar. Não faz parte do MVP
+(`docs/02` RF-001). As rotas foram mantidas para que adotar o recurso no futuro
+seja apenas implementar a interface no model.
+
+---
+
+## 6.2 Idioma da interface
+
+Decisão registrada na Fase 1 (2026-08-05).
+
+O produto é destinado ao público brasileiro (`docs/01` §4), então a aplicação
+roda em português:
+
+| Variável | Valor |
+|---|---|
+| `APP_LOCALE` | `pt_BR` |
+| `APP_FALLBACK_LOCALE` | `en` |
+| `APP_FAKER_LOCALE` | `pt_BR` |
+
+As telas do Breeze já envolvem todo texto visível em `__()`, então a tradução
+vive em arquivos de idioma e **nenhuma view precisou ser editada**:
+
+- `lang/pt_BR.json` — textos de interface.
+- `lang/pt_BR/validation.php`, `auth.php`, `passwords.php` — mensagens do framework.
+
+As traduções são **parciais por opção**: cobrem as regras alcançáveis pelas telas
+existentes. Chaves ausentes caem no `APP_FALLBACK_LOCALE`, então nada quebra — os
+arquivos crescem conforme novas regras entram no produto.
+
+Isso é diferente da regra de `docs/03` §6.3, que trata de **dados**: `category` é
+persistida em inglês e só o rótulo é exibido em português. O idioma da interface
+não altera o que vai para o banco.
 
 ---
 
