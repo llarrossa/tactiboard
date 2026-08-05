@@ -215,6 +215,33 @@ Criar uma tabela individual para cada elemento aumentaria a complexidade do MVP 
 
 ---
 
+## Estado inicial e restrições
+
+Decisão registrada na Fase 2 (2026-08-05).
+
+A coluna é `NOT NULL`. Uma prancheta recém-criada nasce com o canvas vazio:
+
+```json
+{ "elements": [] }
+```
+
+O padrão é definido no model (`$attributes`), não no banco — colunas `json` do
+MySQL não aceitam DEFAULT literal, e manter a regra no model funciona igual em
+qualquer driver.
+
+O motivo de não permitir `null`: o editor da Fase 3 passa a poder assumir que a
+estrutura sempre existe, sem espalhar verificação de ausência pelo código.
+
+## Ordem das chaves não é preservada
+
+O MySQL normaliza objetos JSON ao gravar: o que volta tem o mesmo conteúdo, mas
+não necessariamente na mesma ordem de chaves.
+
+Nenhuma lógica pode depender dessa ordem. Em teste, comparar canvas por
+igualdade de conteúdo, nunca por identidade estrita.
+
+---
+
 # 6.2 Campo visibility
 
 O campo visibility controla a disponibilidade da prancheta.
@@ -540,6 +567,16 @@ Obrigatório:
 - Possuir um usuário proprietário.
 - Possuir título.
 - Possuir dados válidos do canvas.
+
+### Exclusão em cascata
+
+`boards.user_id` tem `ON DELETE CASCADE`: excluir a conta remove as pranchetas
+do usuário. Sem isso, a exclusão de conta implementada na Fase 1 esbarraria na
+foreign key ou deixaria pranchetas órfãs.
+
+`shared_links.board_id` deverá seguir a mesma regra quando a tabela for criada
+na Fase 4 — como o MVP não usa Soft Delete, um link que sobrevivesse à prancheta
+continuaria acessível apontando para o nada.
 
 ---
 

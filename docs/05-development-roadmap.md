@@ -177,6 +177,8 @@ desfeitos por engano em uma reinstalação:
 
 # 5. Fase 2 — Módulo de Pranchetas
 
+**Status: concluída em 2026-08-05.**
+
 ## Objetivo
 
 Criar o núcleo inicial do produto.
@@ -187,11 +189,11 @@ Criar o núcleo inicial do produto.
 
 Implementar:
 
-- Criar prancheta.
-- Listar pranchetas.
-- Visualizar detalhes.
-- Editar informações.
-- Excluir prancheta.
+- [x] Criar prancheta.
+- [x] Listar pranchetas.
+- [x] Visualizar detalhes.
+- [x] Editar informações.
+- [x] Excluir prancheta.
 
 ---
 
@@ -199,9 +201,9 @@ Implementar:
 
 Criar:
 
-- Migration boards.
-- Model Board.
-- Relacionamento User → Boards.
+- [x] Migration boards.
+- [x] Model Board.
+- [x] Relacionamento User → Boards.
 
 ---
 
@@ -209,8 +211,8 @@ Criar:
 
 Implementar:
 
-- BoardPolicy.
-- Controle de propriedade.
+- [x] BoardPolicy.
+- [x] Controle de propriedade.
 
 ---
 
@@ -218,17 +220,62 @@ Implementar:
 
 Criar testes para:
 
-- Criação de prancheta.
-- Listagem.
-- Edição.
-- Exclusão.
-- Permissões.
+- [x] Criação de prancheta.
+- [x] Listagem.
+- [x] Edição.
+- [x] Exclusão.
+- [x] Permissões.
 
 ---
 
 ## Critérios de conclusão
 
-Usuário consegue gerenciar suas próprias pranchetas.
+- [x] Usuário consegue gerenciar suas próprias pranchetas.
+
+---
+
+## Resultado
+
+| Item | Estado |
+|---|---|
+| Banco | Tabela `boards` conforme `docs/03` §6, com os três índices de §9 |
+| Model | `Board` com `user()`, casts de enum e do canvas, scope `ownedBy` |
+| Enums | `BoardCategory` e `BoardVisibility`, persistidos em inglês e exibidos em português |
+| Camadas | `CreateBoardAction`, `UpdateBoardAction`, `DeleteBoardAction`; `CreateBoardRequest` e `UpdateBoardRequest` |
+| Autorização | `BoardPolicy` (view, update, delete), presa às rotas por `can` |
+| Telas | Dashboard com a lista, criar, ver e editar/excluir |
+| Testes | 79 testes, 228 asserções, todos passando |
+| Formatação | Laravel Pint sem violações |
+
+### Decisões desta fase
+
+1. **CRUD sem Livewire.** O módulo é um CRUD de formulários, sem reatividade:
+   controllers finos, Form Requests, Actions e Blade dão conta. Instalar o
+   Livewire agora seria dependência sem necessidade (`CLAUDE.md` §3, regra 5).
+   Ele entra na Fase 3, onde o editor realmente precisa. Ver `docs/04` §8.1.
+2. **`canvas_data` nasce com `{"elements": []}`**, nunca `null`, via `$attributes`
+   no model. Assim o editor da Fase 3 não precisa tratar ausência de estrutura.
+   A coluna é `NOT NULL`.
+3. **`visibility` nasce `private`** e não é editável nesta fase. O formulário de
+   RF-005 tem apenas nome, descrição e categoria; tornar pública é assunto do
+   compartilhamento, na Fase 4.
+4. **`user_id` fora do `$fillable`.** A propriedade vem do usuário autenticado
+   pela Action, nunca da entrada. Há teste que envia `user_id` de outra pessoa e
+   confirma que é ignorado.
+5. **Dashboard é a listagem.** RF-004 pede a lista no dashboard, então não existe
+   uma rota `/boards` de índice — teria duas telas com a mesma função.
+6. **Acesso negado responde 403**, não 404. É o padrão do Laravel e atende a
+   RN-001. Vale saber que isso revela a existência do ID a quem tentar adivinhar;
+   se algum dia isso incomodar, a Policy pode passar a devolver 404.
+7. **Paginação de 12 por página** na listagem. O índice em `created_at` já existia
+   para ordenar (`docs/03` §9).
+
+### Aprendizado sobre o canvas em JSON
+
+O MySQL **não preserva a ordem das chaves** em coluna `json`: o que volta tem o
+mesmo conteúdo em outra ordem. Nenhuma lógica pode depender dessa ordem — vale
+para o editor da Fase 3 e para qualquer comparação de canvas em teste, que deve
+usar igualdade por conteúdo e não identidade estrita.
 
 ---
 

@@ -325,26 +325,33 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-05):** **Fases 0 e 1 concluídas.** A aplicação Laravel
+**Estado atual (2026-08-05):** **Fases 0, 1 e 2 concluídas.** A aplicação Laravel
 12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está conectado e
 o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
 
-A Fase 1 entregou a fundação: autenticação com Breeze (cadastro, login, logout,
-recuperação de senha), layout base com navbar, dashboard e perfil do usuário —
-tudo em português. A suíte tem **43 testes / 134 asserções**, todos passando, e o
-Pint não acusa violações.
+A Fase 1 entregou a fundação: autenticação com Breeze, layout base com navbar,
+dashboard e perfil. A Fase 2 entregou o núcleo do produto: tabela `boards`, model
+`Board`, CRUD completo e `BoardPolicy` aplicando a RN-001. Tudo em português. A
+suíte tem **79 testes / 228 asserções**, todos passando, e o Pint está limpo.
 
-Ainda **não** existem `boards`, editor nem compartilhamento. Próximo passo:
-**Fase 2** (migration `boards`, model, CRUD, `BoardPolicy`).
+Ainda **não** existem editor tático nem compartilhamento. Próximo passo:
+**Fase 3** (editor: campo, elementos, manipulação, persistência do canvas).
 
-Pontos da Fase 1 que valem lembrar antes de mexer em auth ou frontend:
+Pontos das fases anteriores que valem lembrar:
 - A validação vive em **Form Requests**, não nos controllers do Breeze — ver
   `docs/04` §6.1. Reinstalar o Breeze desfaz isso.
 - O **Tailwind 4** foi preservado sobre o scaffolding do Breeze, que rebaixaria
   para o 3. Não recriar `tailwind.config.js` nem `postcss.config.js`.
 - A **verificação de e-mail** está instalada mas inativa (o `User` não implementa
   `MustVerifyEmail`). Está fora do MVP.
-- `tests/Unit` guarda um `.gitkeep`: sem o diretório, a suíte inteira aborta.
+- **Livewire ainda não está instalado.** Ele entra na Fase 3, com o editor — o
+  CRUD da Fase 2 não precisava. Ver `docs/04` §8.1.
+- `canvas_data` **nunca é `null`**: nasce `{"elements": []}` pelo `$attributes` do
+  model. E o MySQL **não preserva a ordem das chaves** em coluna `json` — nenhuma
+  lógica pode depender dela. Ver `docs/03` §6.1.
+- `user_id` está **fora do `$fillable`** de `Board`: a propriedade vem do usuário
+  autenticado pela Action, nunca da entrada.
+- `tests/Unit` precisa existir: sem o diretório, a suíte inteira aborta.
 
 **Particularidades do ambiente desta máquina** (ver `docs/04` §18):
 - A aplicação responde em `http://localhost:8080`, não na porta 80.
@@ -360,7 +367,7 @@ Pontos da Fase 1 que valem lembrar antes de mexer em auth ou frontend:
 |---|---|---|
 | **0** ✅ | Preparação: criar projeto Laravel, Sail + Docker, banco, Git, Pest, Tailwind | **Concluída** — app roda via Sail, banco conectado, suíte Pest executando, projeto versionado |
 | **1** ✅ | Fundação: auth (Breeze), layout base, navbar, dashboard, perfil | **Concluída** — usuário cria conta, entra, acessa dashboard, sai |
-| **2** | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | Usuário gerencia as próprias pranchetas |
+| **2** ✅ | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | **Concluída** — usuário gerencia as próprias pranchetas |
 | **3** | Editor tático: campo, elementos, manipulação, persistência JSON | Usuário cria jogada, salva, reabre mantendo o estado |
 | **4** | Compartilhamento: `shared_links`, link público, visualização | Pessoa sem conta acessa a análise pelo link, sem editar |
 | **5** | UX: toolbar, atalhos, duplicar, limpar campo, responsividade | Editor confortável para uso real |
@@ -448,7 +455,7 @@ Decisões adicionais confirmadas na Fase 0:
 | Versão do Pest | **4.x** (4.7.8) | O Pest 5 exige `symfony/process ^8`, e o Laravel 12 fixa `^7.2` — são incompatíveis. O Pest 5 pressupõe Laravel 13 |
 | Versão do PHP | **8.4** (`composer.json` exige `^8.4`) | Atende `docs/04` §2. O Sail 1.65 sugeriria 8.5 por padrão; fixado em 8.4 explicitamente |
 | Starter kit de auth | **Breeze** com Blade + Alpine + Tailwind, na Fase 1 | Entrega exatamente a stack de `docs/04` §6, sem arrastar Volt/Flux |
-| Livewire | **Não instalado na Fase 0** | Só entra quando existir o primeiro componente (Fase 2/3) |
+| Livewire | **Não instalado na Fase 0** | Só entra quando existir o primeiro componente. Fixado na Fase 3 pela decisão registrada abaixo |
 | Publicação de portas | Somente em `127.0.0.1` (`APP_BIND`) | `docs/04` §18 |
 
 Decisões confirmadas na Fase 1:
@@ -462,6 +469,18 @@ Decisões confirmadas na Fase 1:
 | Action na autenticação | **Só `RegisterUserAction`** | As demais operações são chamadas diretas a `Auth`/`Password`; envolvê-las em Action seria camada sem responsabilidade real (`docs/04` §20) |
 | Verificação de e-mail | **Instalada, mas inativa** | Fora do MVP (`docs/02` RF-001). Manter as rotas evita reinstalar depois |
 | Idioma dos testes | **Português**, inclusive nos testes vindos do Breeze | Coerência com o resto do projeto. Ver `docs/06` §13 |
+
+Decisões confirmadas na Fase 2:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Livewire no CRUD | **Não instalar ainda** | O CRUD é fluxo de formulários, sem reatividade. Entra na Fase 3, com o editor. Ver `docs/04` §8.1 |
+| Estado inicial do canvas | **`{"elements": []}`**, coluna `NOT NULL` | O editor da Fase 3 passa a assumir que a estrutura existe. Padrão no model porque `json` do MySQL não aceita DEFAULT literal |
+| `visibility` no cadastro | **Nasce `private`, não editável** | RF-005 pede só nome, descrição e categoria. Tornar pública é assunto da Fase 4 |
+| Propriedade da prancheta | **`user_id` fora do `$fillable`** | A propriedade vem do usuário autenticado, nunca da entrada. Coberto por teste |
+| Rota de listagem | **O dashboard é a lista**, sem `/boards` de índice | RF-004 pede a lista no dashboard; duas telas com a mesma função seria duplicação |
+| Resposta a acesso negado | **403** | Padrão do Laravel e atende a RN-001. Revela a existência do ID; se incomodar, a Policy pode devolver 404 |
+| Paginação | **12 por página** | O índice em `created_at` já existia para ordenar |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).

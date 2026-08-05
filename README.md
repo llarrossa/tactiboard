@@ -6,9 +6,9 @@ O elemento central é a **Prancheta Tática**: uma análise visual criada sobre 
 campo de futebol (ex.: "Saída de bola 4-3-3", "Pressão alta", "Escanteio
 ofensivo", "Exercício de treinamento").
 
-> **Status:** Fases 0 e 1 concluídas — ambiente preparado e fundação da aplicação
-> no ar (cadastro, login, logout, recuperação de senha, dashboard e perfil).
-> As pranchetas táticas ainda não existem; elas entram na Fase 2.
+> **Status:** Fases 0, 1 e 2 concluídas — ambiente preparado, autenticação no ar
+> e gerenciamento de pranchetas funcionando (criar, listar, ver, editar, excluir).
+> O editor tático e o compartilhamento entram nas Fases 3 e 4.
 > O roadmap completo está em [`docs/05-development-roadmap.md`](docs/05-development-roadmap.md).
 
 ---
@@ -18,7 +18,8 @@ ofensivo", "Exercício de treinamento").
 Laravel 12 · PHP 8.4 · MySQL 8.4 · Blade · Livewire · Alpine.js · Tailwind CSS 4
 · Laravel Breeze · Pest 4 · Laravel Sail sobre Docker
 
-O Livewire entra a partir da Fase 2, quando existir o primeiro componente.
+O Livewire entra na Fase 3, com o editor tático — o CRUD de pranchetas não
+precisa de reatividade.
 
 ---
 
