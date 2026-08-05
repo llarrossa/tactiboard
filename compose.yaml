@@ -9,8 +9,14 @@ services:
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
-            - '${APP_PORT:-80}:80'
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+            # Publicado apenas em loopback por padrao. Esta maquina tem IP
+            # publico e o Docker contorna o INPUT do UFW ao publicar portas,
+            # entao expor em 0.0.0.0 deixaria a aplicacao (com APP_DEBUG=true)
+            # aberta na internet. Para acessar de fora, use um tunel SSH:
+            #   ssh -L 8080:127.0.0.1:8080 <host>
+            # Para publicar de verdade, defina APP_BIND=0.0.0.0 no .env.
+            - '${APP_BIND:-127.0.0.1}:${APP_PORT:-80}:80'
+            - '${APP_BIND:-127.0.0.1}:${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
             WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: 1
@@ -26,7 +32,11 @@ services:
     mysql:
         image: 'mysql:8.4'
         ports:
-            - '${FORWARD_DB_PORT:-3306}:3306'
+            # Publicado apenas em loopback. O Docker insere suas regras antes do
+            # INPUT do UFW, entao uma porta publicada em 0.0.0.0 fica acessivel
+            # pela internet mesmo com o firewall fechado. A aplicacao alcanca o
+            # banco pela rede interna 'sail', nao por esta porta.
+            - '127.0.0.1:${FORWARD_DB_PORT:-3306}:3306'
         environment:
             MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
             MYSQL_ROOT_HOST: '%'

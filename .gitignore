@@ -1,8 +1,10 @@
 *.log
 .DS_Store
 .env
-.env.backup
-.env.production
+# Ignora qualquer variante (.env.local, .env.testing, .env.dusk.local, ...)
+# e mantem apenas o .env.example versionado.
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
