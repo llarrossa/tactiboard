@@ -1,5 +1,14 @@
 @props(['class' => ''])
 
+@php
+    // O gramado e o sistema de coordenadas do canvas, entao as dimensoes vem
+    // de CanvasRules — a mesma classe que valida se um elemento caiu fora do
+    // campo. A margem so abre espaco para as traves e a grama em volta.
+    $width = App\Rules\CanvasRules::FIELD_WIDTH;
+    $height = App\Rules\CanvasRules::FIELD_HEIGHT;
+    $margin = 30;
+@endphp
+
 {{--
     Campo de futebol nas medidas oficiais da IFAB (105 m x 68 m), desenhado em
     SVG com um sistema de coordenadas proprio: 1 unidade = 1 decimetro, entao o
@@ -14,21 +23,23 @@
     0..1050 no eixo x e 0..680 no eixo y.
 --}}
 
-<svg viewBox="-30 -30 1110 740"
+<svg viewBox="{{ -$margin }} {{ -$margin }} {{ $width + $margin * 2 }} {{ $height + $margin * 2 }}"
      xmlns="http://www.w3.org/2000/svg"
      preserveAspectRatio="xMidYMid meet"
      {{ $attributes->merge(['class' => 'block w-full h-auto select-none '.$class]) }}>
 
-    <rect x="-30" y="-30" width="1110" height="740" fill="#2e7d46" />
+    <rect x="{{ -$margin }}" y="{{ -$margin }}"
+          width="{{ $width + $margin * 2 }}" height="{{ $height + $margin * 2 }}" fill="#2e7d46" />
 
-    {{-- Faixas de corte do gramado: sao 10 faixas de 105 unidades. --}}
+    {{-- Faixas de corte do gramado: 10 faixas verticais de larguras iguais. --}}
     @for ($i = 0; $i < 10; $i += 2)
-        <rect x="{{ $i * 105 }}" y="0" width="105" height="680" fill="#ffffff" opacity="0.04" />
+        <rect x="{{ $i * $width / 10 }}" y="0" width="{{ $width / 10 }}" height="{{ $height }}"
+              fill="#ffffff" opacity="0.04" />
     @endfor
 
     <g fill="none" stroke="#ffffff" stroke-width="3" opacity="0.9">
         {{-- Linhas laterais e de fundo --}}
-        <rect x="0" y="0" width="1050" height="680" />
+        <rect x="0" y="0" width="{{ $width }}" height="{{ $height }}" />
 
         {{-- Meio-campo, circulo central (raio 9,15 m) e marca central --}}
         <line x1="525" y1="0" x2="525" y2="680" />

@@ -22,9 +22,11 @@ test('o dono abre o editor na tela da prancheta', function () {
 });
 
 test('o editor desenha o campo no sistema de coordenadas do canvas', function () {
-    $board = Board::factory()->create();
+    $user = User::factory()->create();
+    $board = Board::factory()->for($user)->create();
 
-    Livewire::test(BoardEditor::class, ['board' => $board])
+    Livewire::actingAs($user)
+        ->test(BoardEditor::class, ['board' => $board])
         ->assertOk()
         // O gramado vai de (0,0) a (1050,680): e nesse espaco que as
         // coordenadas dos elementos sao persistidas.
@@ -33,9 +35,11 @@ test('o editor desenha o campo no sistema de coordenadas do canvas', function ()
 });
 
 test('o campo traz as marcacoes oficiais exigidas pelo RF-009', function () {
-    $board = Board::factory()->create();
+    $user = User::factory()->create();
+    $board = Board::factory()->for($user)->create();
 
-    Livewire::test(BoardEditor::class, ['board' => $board])
+    Livewire::actingAs($user)
+        ->test(BoardEditor::class, ['board' => $board])
         // Meio-campo, circulo central, grandes areas e pequenas areas.
         ->assertSee('<line x1="525" y1="0" x2="525" y2="680"', false)
         ->assertSee('<circle cx="525" cy="340" r="91.5"', false)
