@@ -1,5 +1,6 @@
 {
     ":side player number :number": "Jogador :number — :side",
+    ":count of :max elements": ":count de :max elementos",
     "A board holds at most :max elements.": "Uma prancheta comporta no máximo :max elementos.",
     "Add elements": "Adicionar elementos",
     "Already registered?": "Já tem uma conta?",
