@@ -66,23 +66,33 @@ test('um usuario autenticado nao acessa a tela de login', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
-test('cinco tentativas erradas bloqueiam o login', function () {
+test('cinco tentativas erradas bloqueiam o login, e nem uma a menos', function () {
     // O bloqueio protege a senha de tentativa em massa. Sem teste, uma
     // reinstalacao do Breeze ou uma mudanca no Form Request poderia derrubar a
     // protecao sem que nada na suite acusasse.
+    //
+    // As cinco primeiras tentativas sao conferidas uma a uma de proposito:
+    // afirmar so que a sexta bloqueia deixaria passar um bloqueio que comeca
+    // cedo demais e tranca o usuario que errou a senha quatro vezes.
     Event::fake([Lockout::class]);
 
     $user = User::factory()->create();
 
     foreach (range(1, 5) as $tentativa) {
-        $this->post('/login', [
+        $response = $this->post('/login', [
             'email' => $user->email,
             'password' => 'senha-errada',
         ]);
+
+        $response->assertSessionHasErrors([
+            'email' => trans('auth.failed'),
+        ]);
     }
 
-    // A senha correta tambem e recusada: o que bloqueia e a quantidade de
-    // tentativas, nao a credencial enviada.
+    Event::assertNotDispatched(Lockout::class);
+
+    // Na sexta, a senha correta tambem e recusada: o que bloqueia e a
+    // quantidade de tentativas, nao a credencial enviada.
     $response = $this->post('/login', [
         'email' => $user->email,
         'password' => 'password',
@@ -118,7 +128,9 @@ test('o bloqueio avisa quanto tempo falta', function () {
 
 test('o bloqueio vale por email e endereco, nao para o site inteiro', function () {
     // Bloquear o login de todo mundo porque uma conta sofreu tentativa seria
-    // negacao de servico de graca.
+    // negacao de servico de graca. A chave do limitador e `email|ip`, entao as
+    // duas metades precisam ser exercitadas: mudar so o e-mail nao distinguiria
+    // esta implementacao de uma que limitasse apenas por conta.
     $alvo = User::factory()->create();
     $outro = User::factory()->create();
 
@@ -129,11 +141,25 @@ test('o bloqueio vale por email e endereco, nao para o site inteiro', function (
         ]);
     }
 
+    // Outra conta, do mesmo endereco.
     $response = $this->post('/login', [
         'email' => $outro->email,
         'password' => 'password',
     ]);
 
     $this->assertAuthenticatedAs($outro);
+    $response->assertRedirect(route('dashboard', absolute: false));
+
+    $this->post('/logout');
+
+    // A mesma conta, de outro endereco: quem entra do proprio computador nao
+    // pode ficar preso porque alguem tentou adivinhar a senha dele de fora.
+    $response = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+        ->post('/login', [
+            'email' => $alvo->email,
+            'password' => 'password',
+        ]);
+
+    $this->assertAuthenticatedAs($alvo);
     $response->assertRedirect(route('dashboard', absolute: false));
 });

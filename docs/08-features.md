@@ -144,7 +144,8 @@ celular.
 
 O jogador novo recebe **o menor número livre do seu lado**, então em geral não é
 preciso digitar número nenhum. A prancheta comporta **100 elementos**; a barra
-mostra o total (`n/100` ) e desabilita os botões ao chegar no limite.
+mostra quanto já está em campo — "12 de 100 elementos" — e desabilita os botões
+ao chegar no limite.
 
 ## 6.3 Manipulação (RF-011)
 

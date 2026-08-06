@@ -116,8 +116,9 @@ Criar o alias `alias sail='./vendor/bin/sail'` evita repetir o caminho.
 ```
 
 A suíte usa Pest e cobre fluxos de usuário, permissões e as regras do canvas.
-Toda funcionalidade tem teste de sucesso, de erro e de permissão — o padrão está
-em [`docs/06-coding-guidelines.md`](docs/06-coding-guidelines.md) §13.
+Toda funcionalidade tem teste de sucesso, de erro e de permissão — a regra está
+em [`docs/06-coding-guidelines.md`](docs/06-coding-guidelines.md) §14, e a
+organização entre feature e unit tests, em §13.
 
 ---
 
