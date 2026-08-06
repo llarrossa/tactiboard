@@ -363,8 +363,13 @@ Utilizar para:
 
 Exemplos:
 
-- `tests/Unit/Enums/` — os enums do domínio.
+- `tests/Unit/Enums/` — os quatro enums do domínio: `BoardCategory`,
+  `BoardVisibility`, `CanvasElementType` e `PlayerTeam`.
 - `tests/Unit/Rules/CanvasRulesTest.php` — as regras do canvas.
+
+Os testes de enum conferem os **valores persistidos**, e não só os rótulos:
+`player`, `home`, `attack` e companhia vão para dentro de `canvas_data` e da
+coluna `category`, então mudá-los invalidaria o que já está gravado.
 
 O `CanvasRulesTest` roda o validator de verdade, com `Validator::make`, em vez de
 apenas conferir o conteúdo do array de regras. Inspecionar strings não pegaria
@@ -375,6 +380,22 @@ O diretório `tests/Unit` contém um `.gitkeep` porque a suíte **não roda** se
 diretório declarado no `phpunit.xml` não existir — a execução aborta com
 `Test directory not found`. Manter o arquivo evita que isso volte caso os testes
 de unidade sejam movidos algum dia.
+
+---
+
+## Cobertura
+
+Decisão registrada na Fase 6 (2026-08-06).
+
+A suíte deve manter **pelo menos 97% de cobertura de linhas**, medida por
+`sail pest --coverage`. O número não é meta de vaidade: abaixo dele começam a
+ficar de fora justamente os caminhos que ninguém exercita à mão — bloqueio de
+tentativas, guardas de payload adulterado, ramos de erro.
+
+O que ficar descoberto precisa ser **decisão registrada**, e não esquecimento. A
+única exclusão hoje são os controllers de verificação de e-mail, recurso
+instalado pelo Breeze e inativo por opção desde a Fase 1 (`docs/04` §6.1):
+testá-lo cobriria código que o produto não usa.
 
 ---
 

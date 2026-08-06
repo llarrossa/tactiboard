@@ -6,11 +6,26 @@ O elemento central é a **Prancheta Tática**: uma análise visual criada sobre 
 campo de futebol (ex.: "Saída de bola 4-3-3", "Pressão alta", "Escanteio
 ofensivo", "Exercício de treinamento").
 
-> **Status:** Fases 0, 1, 2 e 3 concluídas — ambiente preparado, autenticação no
-> ar, gerenciamento de pranchetas (criar, listar, ver, editar, excluir) e o
-> editor tático funcionando: campo, jogadores, bola, cone, texto e setas, com
-> arrastar, remover e salvar. O compartilhamento por link entra na Fase 4.
-> O roadmap completo está em [`docs/05-development-roadmap.md`](docs/05-development-roadmap.md).
+> **Status:** MVP completo. As fases 0 a 5 estão concluídas — ambiente, autenticação,
+> gerenciamento de pranchetas, editor tático, compartilhamento por link público e
+> as melhorias de experiência do editor. A Fase 6 (qualidade e documentação) está
+> em andamento. O roadmap completo está em
+> [`docs/05-development-roadmap.md`](docs/05-development-roadmap.md).
+
+---
+
+## O que dá para fazer
+
+- **Criar uma conta** e entrar. O login bloqueia após cinco tentativas erradas.
+- **Organizar as análises** no dashboard, com nome, categoria e datas.
+- **Montar a jogada** no editor: campo oficial, jogadores dos dois lados, bola,
+  cone, texto e seta — arrastando com o mouse ou com o dedo.
+- **Ajustar pelo teclado**, com atalhos para salvar, duplicar, remover e mover.
+- **Compartilhar por link público**, que qualquer pessoa abre sem ter conta e
+  ninguém consegue editar. O endereço pode ser revogado ou trocado por um novo.
+
+A descrição completa de cada funcionalidade, com limites e limitações conhecidas,
+está em [`docs/08-features.md`](docs/08-features.md).
 
 ---
 
@@ -58,7 +73,12 @@ Suba o ambiente e prepare a aplicação:
 ./vendor/bin/sail npm run build
 ```
 
-A aplicação fica disponível em <http://localhost:8080>.
+A aplicação fica disponível em <http://localhost:8080>. Crie uma conta em
+`/register` e o dashboard abre em seguida.
+
+> **Na primeira subida, o MySQL leva alguns segundos para inicializar.** Se o
+> `migrate` responder `SQLSTATE[HY000] [2002] Connection refused`, aguarde e
+> repita o comando — o container ainda estava criando o banco.
 
 > As portas 80 e 3306 costumam estar ocupadas, então o `.env.example` já usa
 > `APP_PORT=8080` e `FORWARD_DB_PORT=33061`. As portas são publicadas apenas em
@@ -81,10 +101,40 @@ A aplicação fica disponível em <http://localhost:8080>.
 ./vendor/bin/sail npm run dev      # Vite em watch
 ./vendor/bin/sail artisan migrate  # migrations
 ./vendor/bin/sail pest             # suíte de testes
+./vendor/bin/sail pest --coverage  # suíte com cobertura
 ./vendor/bin/sail bin pint         # formatação PSR
 ```
 
 Criar o alias `alias sail='./vendor/bin/sail'` evita repetir o caminho.
+
+---
+
+## Testes
+
+```bash
+./vendor/bin/sail pest
+```
+
+A suíte usa Pest e cobre fluxos de usuário, permissões e as regras do canvas.
+Toda funcionalidade tem teste de sucesso, de erro e de permissão — o padrão está
+em [`docs/06-coding-guidelines.md`](docs/06-coding-guidelines.md) §13.
+
+---
+
+## Antes de publicar em um servidor
+
+O `.env.example` descreve um ambiente **de desenvolvimento**. Em um servidor de
+verdade, revise pelo menos:
+
+- `APP_DEBUG=false` e `APP_ENV=production` — com o debug ligado, uma página de
+  erro exibe o conteúdo do `.env`.
+- `APP_KEY` gerada para aquele ambiente, e `APP_URL` com o domínio real.
+- Senha de banco própria, diferente da padrão do Sail.
+- `MAIL_MAILER` de verdade: com o padrão `log`, o e-mail de recuperação de senha
+  é apenas gravado em `storage/logs`.
+- `APP_BIND` e as portas publicadas — ver
+  [`docs/04-technical-architecture.md`](docs/04-technical-architecture.md) §18.1,
+  que explica por que o Docker contorna o firewall do host.
 
 ---
 
@@ -101,3 +151,4 @@ A pasta [`docs/`](docs/) é a fonte de verdade do projeto.
 | [`05-development-roadmap.md`](docs/05-development-roadmap.md) | Fases de desenvolvimento |
 | [`06-coding-guidelines.md`](docs/06-coding-guidelines.md) | Padrões de código, testes, git |
 | [`07-ai-development-guide.md`](docs/07-ai-development-guide.md) | Fluxo de trabalho com ferramentas de IA |
+| [`08-features.md`](docs/08-features.md) | O que o produto faz hoje, funcionalidade por funcionalidade |

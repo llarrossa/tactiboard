@@ -670,6 +670,30 @@ Regras:
 
 ---
 
+## 11.1 Carregamento tardio bloqueado fora de produção
+
+Decisão registrada na Fase 6 (2026-08-06).
+
+`AppServiceProvider::boot()` chama
+`Model::preventLazyLoading(! $this->app->isProduction())`.
+
+Carregar um relacionamento dentro de uma view é o caminho clássico para o N+1:
+a página funciona, e só fica lenta conforme a lista cresce — nada falha, nada
+avisa. Com a proteção ligada em desenvolvimento e em teste, o descuido vira
+exceção na hora e a suíte acusa. Em produção ela fica **desligada**: uma
+consulta a mais é melhor do que uma tela de erro para o usuário.
+
+Dois pontos precisaram carregar explicitamente o que a view usa:
+
+| Ponto | O que carrega |
+|---|---|
+| `BoardController::show()` | `$board->load('sharedLinks')`, lido pelo painel de compartilhamento |
+| `SharedBoardController::show()` | `->with('board')` na consulta do token |
+
+O `BoardEditor` não entra na lista: ele usa só as colunas da própria prancheta.
+
+---
+
 # 12. Testes
 
 O projeto deve utilizar testes automatizados.

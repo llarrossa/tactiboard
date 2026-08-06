@@ -53,8 +53,10 @@ qualquer alteração relevante**.
 | `docs/05-development-roadmap.md` | Ordem das fases e critérios de conclusão |
 | `docs/06-coding-guidelines.md` | Padrões de código, nomenclatura, testes, git |
 | `docs/07-ai-development-guide.md` | Fluxo de trabalho de IA, uso do Codex |
+| `docs/08-features.md` | O que o produto faz hoje: funcionalidades, limites e onde cada uma vive |
 
-Ordem de prioridade em caso de dúvida: 01 → 02 → 03 → 04 → 05 → 06 → 07.
+Ordem de prioridade em caso de dúvida: 01 → 02 → 03 → 04 → 05 → 06 → 07. O 08
+descreve o produto existente; ele não decide, registra.
 
 **Conflito entre código e documentação:** analisar o motivo, informar o conflito,
 propor solução e aguardar decisão quando for relevante. Nunca resolver
