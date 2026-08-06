@@ -41,9 +41,10 @@
         <p class="mb-4 text-sm text-red-600">{{ $errors->first() }}</p>
     @endif
 
-    {{-- `touch-none` desliga o gesto de rolagem sobre o campo: sem isso, no
-         celular arrastar um jogador rola a pagina em vez de mover a peca. --}}
-    <x-field x-ref="field" class="touch-none"
+    {{-- O gesto de rolagem so e desligado sobre as pecas (ver
+         canvas/element.blade.php). Desligar no campo inteiro impediria o
+         usuario de rolar a pagina com o dedo sobre a grama. --}}
+    <x-field x-ref="field"
              x-on:pointerdown.self="$wire.select(null)">
         @foreach ($drawable as $element)
             <x-canvas.element :element="$element" :selected="$selectedId === $element['id']" />

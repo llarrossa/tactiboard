@@ -36,7 +36,10 @@
        x-on:keydown.enter.prevent="$wire.select(@js($element['id']))"
        x-on:keydown.space.prevent="$wire.select(@js($element['id']))"
        class="focus:outline-none focus-visible:[outline:3px_solid_#facc15]"
-       style="cursor: grab">
+       {{-- `touch-action: none` vive na peca, e nao no campo inteiro: assim
+            arrastar um jogador no celular move a peca, mas o dedo sobre a
+            grama continua rolando a pagina. --}}
+       style="cursor: grab; touch-action: none">
         @if ($selected && $type->isPositional())
             {{-- Anel de selecao. A seta nao usa: nela quem marca a selecao sao
                  as alcas nas duas pontas. --}}

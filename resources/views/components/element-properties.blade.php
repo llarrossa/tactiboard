@@ -14,7 +14,9 @@
 @endphp
 
 <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-    <div class="flex flex-wrap items-end gap-4">
+    {{-- No celular os campos e as acoes empilham; a partir do `sm` voltam a
+         ficar lado a lado, com as acoes empurradas para a direita. --}}
+    <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div>
             <span class="block text-xs font-medium uppercase tracking-wide text-gray-500">
                 {{ __('Selected element') }}
@@ -46,7 +48,7 @@
         @endif
 
         @if ($type === App\Enums\CanvasElementType::Text)
-            <div class="min-w-64 flex-1">
+            <div class="w-full sm:min-w-64 sm:flex-1">
                 <label for="element-content" class="block text-xs font-medium text-gray-600">
                     {{ __('Content') }}
                 </label>
@@ -57,7 +59,7 @@
             </div>
         @endif
 
-        <div class="ml-auto flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2 sm:ms-auto">
             <button type="button" wire:click="select(null)"
                     class="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50">
                 {{ __('Deselect') }}

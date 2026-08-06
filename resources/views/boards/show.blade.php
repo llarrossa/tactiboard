@@ -12,8 +12,8 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             @if (session('status') === 'board-created')
                 <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board created.') }}</div>
             @elseif (session('status') === 'board-updated')
