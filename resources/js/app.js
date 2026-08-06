@@ -32,6 +32,19 @@ window.tactiboardCanvasDrag = () => ({
     delta: { x: 0, y: 0 },
 
     /*
+     * Deslocamentos ja enviados ao servidor que ainda nao voltaram, por id.
+     *
+     * O elemento continua desenhado no lugar onde o dedo o soltou enquanto a
+     * resposta nao chega. Sem isso ele volta para a posicao antiga — que e a
+     * que o desenho ainda tem — e so pula para a nova quando o Livewire
+     * responde, o que na tela aparece como um solavanco.
+     *
+     * E um mapa por id, e nao um deslocamento so: arrastar outra peca antes de
+     * a primeira assentar nao pode fazer a primeira piscar de volta.
+     */
+    settling: {},
+
+    /*
      * Converte a posicao do ponteiro na tela para o sistema de coordenadas do
      * campo. O SVG escala por CSS, entao pixel de tela nao equivale a unidade
      * do campo; getScreenCTM devolve exatamente essa transformacao.
@@ -102,7 +115,17 @@ window.tactiboardCanvasDrag = () => ({
             return;
         }
 
-        this.$wire.moveElement(id, x, y, part);
+        // O deslocamento sai do gesto e entra na espera: a peca nao se mexe da
+        // largada ate o servidor confirmar onde ela para.
+        this.settling[id] = { part, x, y };
+
+        const settled = () => delete this.settling[id];
+
+        // O mesmo tratamento para sucesso e para falha: se a chamada for
+        // recusada (a sessao pode ter mudado com o editor aberto), segurar o
+        // deslocamento deixaria a peca parada em um lugar que o servidor nao
+        // tem — melhor devolve-la ao que esta gravado.
+        this.$wire.moveElement(id, x, y, part).then(settled, settled);
     },
 
     /*
@@ -111,11 +134,17 @@ window.tactiboardCanvasDrag = () => ({
      * e a posicao chega ao soltar.
      */
     offsetFor(id) {
-        if (this.draggingId !== id || this.draggingPart !== null) {
-            return '';
+        if (this.draggingId === id && this.draggingPart === null) {
+            return `translate(${this.delta.x} ${this.delta.y})`;
         }
 
-        return `translate(${this.delta.x} ${this.delta.y})`;
+        const waiting = this.settling[id];
+
+        if (waiting !== undefined && waiting.part === null) {
+            return `translate(${waiting.x} ${waiting.y})`;
+        }
+
+        return '';
     },
 });
 

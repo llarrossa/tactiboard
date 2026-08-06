@@ -602,6 +602,38 @@ uma peça já presa na borda.
 
 ---
 
+## 8.6 O arrasto não pisca ao soltar
+
+Correção registrada na Fase 6 (2026-08-06), depois de o comportamento ser
+percebido no uso real.
+
+O arrasto acontece em duas camadas: enquanto o dedo ou o ponteiro se move, o
+deslocamento vive no Alpine e é aplicado como `transform` no grupo do elemento;
+ao soltar, ele vira uma chamada `moveElement` e a posição definitiva vem do
+servidor, que é quem aplica o limite do campo.
+
+O `endDrag()` zerava o deslocamento **antes** de a resposta chegar. Nessa janela
+— entre 50 e 150 ms em rede local, mais em rede ruim — o desenho voltava a usar
+o `x`/`y` gravado, ou seja, a peça saltava para a posição anterior e só depois
+pulava para onde tinha sido solta.
+
+A correção mantém o deslocamento aplicado até a chamada responder:
+`tactiboardCanvasDrag()` guarda em `settling`, por id, o deslocamento já enviado,
+e `offsetFor()` usa esse valor quando o elemento não está mais sendo arrastado.
+A entrada é apagada tanto no sucesso quanto na falha — se a chamada for recusada,
+prender a peça em um lugar que o servidor não tem seria pior do que devolvê-la ao
+que está gravado.
+
+É um mapa por id, e não um único deslocamento: arrastar outra peça antes de a
+primeira assentar não pode fazer a primeira piscar de volta.
+
+A verificação foi feita no navegador, com um amostrador por quadro sobre o
+`transform` do grupo e o `cx` do elemento. Antes da correção existia um quadro
+com `transform` vazio e a coordenada antiga; depois dela, não existe. Os atalhos
+e o arrasto seguem sem teste automatizado, como registrado em `docs/05` §8.
+
+---
+
 # 9. Persistência do Canvas
 
 O conteúdo visual da prancheta será armazenado em JSON.
