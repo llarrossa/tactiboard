@@ -4,7 +4,6 @@ namespace App\Actions;
 
 use App\Models\Board;
 use App\Models\SharedLink;
-use Illuminate\Support\Facades\DB;
 
 class RotateSharedLinkAction
 {
@@ -20,27 +19,24 @@ class RotateSharedLinkAction
      * separados (docs/03 §6.2): aqui muda *por onde* o acesso acontece, nao
      * *se* ele pode acontecer. Uma prancheta publica continua publica, no
      * endereco novo.
+     *
+     * Exige um link existente: nao ha endereco a aposentar numa prancheta que
+     * nunca foi compartilhada, e criar um aqui deixaria um token gravado antes
+     * de o dono pedir para compartilhar. O `firstOrFail` vira 404, que e a
+     * resposta certa para uma operacao sobre algo que nao existe.
+     *
+     * Nao precisa da transacao com trava que GenerateSharedLinkAction usa: la
+     * o risco e duas requisicoes simultaneas *inserirem* dois links; aqui a
+     * unica escrita e um UPDATE na mesma linha, e dois pedidos ao mesmo tempo
+     * apenas fazem o ultimo token valer.
      */
     public function execute(Board $board): SharedLink
     {
-        return DB::transaction(function () use ($board): SharedLink {
-            // Mesma trava de GenerateSharedLinkAction, e pelo mesmo motivo: sem
-            // ela, dois cliques simultaneos numa prancheta ainda sem link
-            // inseririam duas linhas, e o dono passaria a ter uma URL publica
-            // que nao aparece no painel e que ele nao sabe revogar.
-            $board->newQuery()->whereKey($board->getKey())->lockForUpdate()->first();
+        $link = $board->sharedLinks()->firstOrFail();
 
-            $link = $board->sharedLinks()->first();
+        $link->token = SharedLink::newToken();
+        $link->save();
 
-            if ($link === null) {
-                $link = new SharedLink;
-                $link->board()->associate($board);
-            }
-
-            $link->token = SharedLink::newToken();
-            $link->save();
-
-            return $link;
-        });
+        return $link;
     }
 }

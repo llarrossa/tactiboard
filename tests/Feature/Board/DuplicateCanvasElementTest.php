@@ -144,3 +144,18 @@ test('um usuario nao duplica elementos na prancheta de outro', function () {
 
     $editor->call('duplicateElement', 'b1')->assertForbidden();
 });
+
+test('a autorizacao de duplicar nao depende do elemento existir', function () {
+    // Sem a verificacao no topo, um id inexistente devolveria 200 a quem
+    // perdeu o acesso, e a resposta passaria a depender do estado do canvas.
+    $owner = User::factory()->create();
+    $board = Board::factory()->for($owner)->create([
+        'canvas_data' => ['elements' => [ball('b1')]],
+    ]);
+
+    $editor = Livewire::actingAs($owner)->test(BoardEditor::class, ['board' => $board]);
+
+    auth()->login(User::factory()->create());
+
+    $editor->call('duplicateElement', 'nao-existe')->assertForbidden();
+});

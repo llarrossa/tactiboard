@@ -128,3 +128,16 @@ test('o painel oferece gerar novo link so quando a prancheta esta compartilhada'
     $this->get(route('boards.show', $board))
         ->assertDontSee(__('Generate a new link'));
 });
+
+test('gerar link novo numa prancheta sem link responde 404', function () {
+    // Nao ha endereco a aposentar, e criar um aqui gravaria um token antes de
+    // o dono pedir para compartilhar.
+    $owner = User::factory()->create();
+    $board = Board::factory()->for($owner)->create();
+
+    $this->actingAs($owner)
+        ->put(route('boards.share.update', $board))
+        ->assertNotFound();
+
+    expect($board->sharedLinks()->count())->toBe(0);
+});

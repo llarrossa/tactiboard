@@ -562,7 +562,7 @@ Melhorar usabilidade do produto.
 | Responsividade | Toque desligado na peça e não no campo; campo limitado a 70vh; painel de propriedades empilhado no celular |
 | Compartilhamento | `RotateSharedLinkAction` e `boards.share.update`, com `SharedLink::newToken()` centralizando o formato |
 | Camadas | Nenhuma camada nova; nenhuma dependência nova; nenhuma migration |
-| Testes | 228 testes, 686 asserções, todos passando |
+| Testes | 232 testes, 693 asserções, todos passando |
 | Formatação | Laravel Pint sem violações |
 
 ### Decisões desta fase
@@ -608,6 +608,26 @@ Melhorar usabilidade do produto.
 - **Comparar posições exige normalizar o tipo.** `1050 === 1050.0` é falso em
   PHP, e a comparação estrita dizia que um elemento parado tinha se movido.
 
+### Achados da auditoria com Codex
+
+A auditoria (gpt-5.4, esforço alto) apontou cinco itens. Quatro foram corrigidos
+antes do fechamento da fase:
+
+1. `RotateSharedLinkAction` criava um link quando não havia nenhum — passou a
+   exigir link existente e responder 404.
+2. `duplicateElement()` autorizava indiretamente, pelo `push()`: um id
+   inexistente devolvia 200 a quem tinha perdido o acesso. A verificação subiu
+   para o topo do método.
+3. `updated()` usava `validateOnly` também na escrita da lista inteira, que só
+   alcança as regras da raiz. Agora valida o canvas inteiro nesse caminho.
+4. A marca de alteração pendente era ligada mesmo por operação que não muda
+   nada. Arrastar uma peça já presa na borda deixou de marcar.
+
+O quinto apontamento — de que o *fallback* do botão de copiar link quebraria em
+contexto sem `navigator.clipboard` — **foi recusado**. O *optional chaining*
+interrompe a cadeia inteira, incluindo o `.then()` seguinte, quando o operando é
+nulo; o comportamento foi confirmado no navegador. O código está correto.
+
 ### Limitações conhecidas
 
 1. **Não existe desfazer.** Limpar campo e remover elemento se recuperam
@@ -617,7 +637,11 @@ Melhorar usabilidade do produto.
    cobre o que a página entrega (as ligações, o foco e os rótulos) mais os
    métodos que eles chamam. O comportamento de ponta a ponta foi verificado no
    navegador.
-3. **Mover pelo teclado custa uma requisição por tecla.** Aceitável no uso real,
+3. **A marca de alteração pendente não volta atrás.** Se o canvas retornar ao
+   estado gravado por outro caminho — adicionar uma peça e depois limpar o campo
+   —, o aviso continua ligado. É deliberado: avisar à toa custa uma confirmação,
+   e deixar de avisar custa o trabalho do usuário.
+4. **Mover pelo teclado custa uma requisição por tecla.** Aceitável no uso real,
    já que o Livewire agrupa chamadas próximas; se incomodar, o acúmulo local com
    envio ao soltar a tecla resolve.
 

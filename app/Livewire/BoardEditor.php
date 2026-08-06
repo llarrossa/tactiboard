@@ -161,9 +161,14 @@ class BoardEditor extends Component
             $element = $this->shifted($element, $dx, $dy);
         }
 
+        // Uma peca ja presa na borda nao se move: marcar alteracao aqui
+        // pediria confirmacao de saida por um arrasto que nao mudou nada.
+        if ($this->positionOf($element) !== $this->positionOf($this->elements[$index])) {
+            $this->hasUnsavedChanges = true;
+        }
+
         $this->elements[$index] = $element;
         $this->selectedId = $id;
-        $this->hasUnsavedChanges = true;
     }
 
     public function removeElement(string $id): void
@@ -217,6 +222,11 @@ class BoardEditor extends Component
      */
     public function duplicateElement(string $id): void
     {
+        // Autoriza antes de qualquer coisa, como as demais escritas. Deixar a
+        // verificacao por conta do push() faria a resposta depender do estado
+        // do canvas: id inexistente devolveria 200 a quem perdeu o acesso.
+        $this->authorize('update', $this->board);
+
         $index = $this->indexOf($id);
 
         if ($index === null) {
@@ -269,11 +279,23 @@ class BoardEditor extends Component
      */
     public function updated(string $property): void
     {
-        if ($property === 'elements' || str_starts_with($property, 'elements.')) {
-            $this->hasUnsavedChanges = true;
-
-            $this->validateOnly($property, CanvasRules::rules(), CanvasRules::messages());
+        if ($property !== 'elements' && ! str_starts_with($property, 'elements.')) {
+            return;
         }
+
+        $this->hasUnsavedChanges = true;
+
+        // Escrever na lista inteira exige validar o canvas inteiro: o
+        // validateOnly('elements') so alcanca as regras da raiz, e um elemento
+        // malformado sairia do desenho por drawable() sem mensagem que
+        // explicasse o sumico.
+        if ($property === 'elements') {
+            $this->validate(CanvasRules::rules(), CanvasRules::messages());
+
+            return;
+        }
+
+        $this->validateOnly($property, CanvasRules::rules(), CanvasRules::messages());
     }
 
     public function save(UpdateBoardCanvasAction $action): void

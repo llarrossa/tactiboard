@@ -84,3 +84,19 @@ test('o editor mostra o aviso e prende a saida da pagina', function () {
         ->assertSee('x-on:beforeunload.window', false)
         ->assertSee('$wire.hasUnsavedChanges', false);
 });
+
+test('um arrasto que nao tira a peca do lugar nao marca alteracao pendente', function () {
+    // A peca ja esta presa na borda: pedir confirmacao de saida por um gesto
+    // que nao mudou nada ensinaria o usuario a ignorar o aviso.
+    $editor = editorWith([ball('b1', 0, 0)])->call('moveElement', 'b1', -50, -50);
+
+    expect($editor->get('hasUnsavedChanges'))->toBeFalse();
+});
+
+test('substituir a lista inteira por um canvas invalido acusa o erro na hora', function () {
+    // validateOnly('elements') so alcanca as regras da raiz; sem a validacao
+    // completa, o elemento sumiria do desenho sem mensagem que explicasse.
+    editorWith([ball('b1')])
+        ->set('elements', [['id' => 'quebrado', 'type' => 'foguete', 'x' => 10, 'y' => 10]])
+        ->assertHasErrors('elements.0.type');
+});

@@ -503,6 +503,13 @@ A operação **não toca em `visibility`**: os dois mecanismos seguem separados
 acontecer. Isso fecha a limitação registrada na Fase 4 — compartilhar de novo
 reaproveita o token, então um link que vazasse continuava valendo.
 
+Ela **exige um link existente** e responde 404 quando não há: não existe
+endereço a aposentar numa prancheta nunca compartilhada, e criar um ali gravaria
+um token antes de o dono pedir para compartilhar — que depois seria reaproveitado
+por `GenerateSharedLinkAction` sem ele saber. Por não ter caminho de inserção, a
+Action também dispensa a transação com trava que `GenerateSharedLinkAction` usa:
+a única escrita é um `UPDATE` na mesma linha.
+
 ### O canvas precisa de dois cuidados fora do editor
 
 1. **`<x-canvas.element>` ganhou a prop `interactive`** (default `true`). O grupo
@@ -581,7 +588,17 @@ ter inteiro, e a comparação acusaria mudança em elemento parado.
 
 O `updated()` marca tanto os caminhos aninhados (`elements.0.number`) quanto a
 escrita na lista inteira (`elements`) — o navegador pode substituir a
-propriedade de uma vez, e essa também é uma edição por gravar.
+propriedade de uma vez, e essa também é uma edição por gravar. Nesse caso a
+validação roda sobre o canvas inteiro, e não por `validateOnly`, que só
+alcançaria as regras da raiz do array.
+
+A marca é **conservadora de propósito**: ela não volta a `false` quando o canvas
+retorna ao estado gravado por outro caminho — adicionar uma peça e depois limpar
+o campo deixa o aviso ligado sem haver diferença real. Isso é aceito porque os
+dois erros possíveis não custam a mesma coisa: avisar à toa custa uma
+confirmação, e deixar de avisar custa o trabalho do usuário. O que não marca é a
+operação que comprovadamente não muda nada — limpar um campo já vazio e arrastar
+uma peça já presa na borda.
 
 ---
 

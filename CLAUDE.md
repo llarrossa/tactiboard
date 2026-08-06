@@ -341,7 +341,7 @@ persistência do canvas. A Fase 4 entregou o compartilhamento: tabela
 `shared_links`, link público e visualização sem cadastro. A Fase 5 tornou o
 editor confortável: duplicar, limpar campo, atalhos de teclado, toolbar agrupada,
 responsividade, aviso de alteração pendente e o botão de gerar link novo. Tudo em
-português. A suíte tem **228 testes / 686 asserções**, todos passando, e o Pint
+português. A suíte tem **232 testes / 693 asserções**, todos passando, e o Pint
 está limpo.
 
 Os critérios de aceitação do MVP (`docs/02` §11) estão **todos atendidos** desde
@@ -363,12 +363,17 @@ Pontos da Fase 5 que valem lembrar:
   percorrida.
 - **`hasUnsavedChanges` é marca, não comparação.** Comparar com o banco acusaria
   mudança em elemento parado, porque o `clamp` devolve float onde o registro
-  gravado pode ter inteiro. Toda escrita no canvas marca; `save()` limpa.
+  gravado pode ter inteiro. Toda escrita no canvas marca; `save()` limpa. Ela é
+  **conservadora**: não volta a `false` quando o canvas retorna ao estado gravado
+  por outro caminho. Avisar à toa custa uma confirmação; deixar de avisar custa o
+  trabalho do usuário.
 - **`updated()` também escuta `elements` inteiro**, não só `elements.*`: o
   navegador pode substituir a lista de uma vez.
 - **Gerar link novo não mexe em `visibility`.** Ele troca o token; quem controla
   o estado público continua sendo `boards.visibility`. `SharedLink::newToken()`
-  é o ponto único do formato do token.
+  é o ponto único do formato do token. A operação **exige um link existente** e
+  responde 404 quando não há — criar um ali gravaria um token antes de o dono
+  pedir para compartilhar.
 - **Limitação conhecida:** não existe desfazer. Limpar campo e remover elemento
   só se recuperam recarregando a página antes de salvar.
 
