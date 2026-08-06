@@ -326,7 +326,7 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-05):** **Fases 0, 1, 2 e 3 concluídas.** A aplicação
+**Estado atual (2026-08-06):** **Fases 0, 1, 2, 3 e 4 concluídas.** A aplicação
 Laravel 12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está
 conectado e o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
 
@@ -334,11 +334,30 @@ A Fase 1 entregou a fundação: autenticação com Breeze, layout base com navba
 dashboard e perfil. A Fase 2 entregou o núcleo do produto: tabela `boards`, model
 `Board`, CRUD completo e `BoardPolicy` aplicando a RN-001. A Fase 3 entregou o
 editor tático: campo em SVG, os seis elementos, arrastar/selecionar/remover e a
-persistência do canvas. Tudo em português. A suíte tem **140 testes / 498
-asserções**, todos passando, e o Pint está limpo.
+persistência do canvas. A Fase 4 entregou o compartilhamento: tabela
+`shared_links`, link público e visualização sem cadastro. Tudo em português. A
+suíte tem **169 testes / 562 asserções**, todos passando, e o Pint está limpo.
 
-Ainda **não** existe compartilhamento. Próximo passo: **Fase 4**
-(`shared_links`, link público, visualização sem cadastro).
+Com a Fase 4 os critérios de aceitação do MVP (`docs/02` §11) estão **todos
+atendidos**. Próximo passo: **Fase 5** (UX do editor — toolbar, atalhos,
+duplicar, limpar campo, responsividade).
+
+Pontos da Fase 4 que valem lembrar:
+- **`/share/{token}` é a única rota anônima do produto.** Fica fora de qualquer
+  grupo de auth: não há sessão nem `User`, então a `BoardPolicy` não se aplica.
+  Quem autoriza é o scope **`SharedLink::accessible()`**, ponto único das três
+  condições de `docs/03` §7.2. Ver `docs/04` §8.4.
+- **Acesso público negado responde 404**, nunca 403 — o token *é* o segredo, e
+  distinguir os motivos confirmaria que alguém acertou um token.
+- **Compartilhar é uma operação só**: a Action gera o token *e* torna a prancheta
+  pública. **Revogar não apaga o link** (`docs/03` §6.2) e recompartilhar
+  **reaproveita o token**, para não quebrar a URL já enviada.
+- **O canvas fora do editor exige dois cuidados**: `<x-canvas.element>` com
+  `:interactive="false"` (as funções de arrasto só existem no `BoardEditor`) e
+  `CanvasRules::drawable()` antes de desenhar — sem ele, um `canvas_data` editado
+  à mão serve 500 a um visitante.
+- **Limitação conhecida:** um link vazado continua o mesmo ao recompartilhar. Um
+  botão "gerar novo link" é candidato à Fase 5.
 
 Pontos da Fase 3 que valem lembrar:
 - **Livewire 4.3.5**, com componentes de **classe** (`make:livewire --class`) em
@@ -389,7 +408,7 @@ Pontos das fases anteriores que valem lembrar:
 | **1** ✅ | Fundação: auth (Breeze), layout base, navbar, dashboard, perfil | **Concluída** — usuário cria conta, entra, acessa dashboard, sai |
 | **2** ✅ | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | **Concluída** — usuário gerencia as próprias pranchetas |
 | **3** ✅ | Editor tático: campo, elementos, manipulação, persistência JSON | **Concluída** — usuário cria jogada, salva, reabre mantendo o estado |
-| **4** | Compartilhamento: `shared_links`, link público, visualização | Pessoa sem conta acessa a análise pelo link, sem editar |
+| **4** ✅ | Compartilhamento: `shared_links`, link público, visualização | **Concluída** — pessoa sem conta acessa a análise pelo link, sem editar |
 | **5** | UX: toolbar, atalhos, duplicar, limpar campo, responsividade | Editor confortável para uso real |
 | **6** | Qualidade: cobertura de testes, revisão, README e docs | Projeto pronto para ambiente real |
 | **7** | Futuro (fora do MVP): biblioteca, animações, colaboração, vídeos, IA | — |
@@ -513,6 +532,19 @@ Decisões confirmadas na Fase 3:
 | Validação do canvas | **`App\Rules\CanvasRules`, fora de Form Request** | O Livewire valida no componente. Exceção consciente a `docs/06` §6, justificada em `docs/04` §8.3 |
 | Onde vive o editor | **`boards.show`** | A prancheta *é* o campo. `boards.edit` segue com nome, descrição e categoria |
 | Toolbar | **Componente Blade, não Livewire** | Não guarda estado próprio; só dispara ações no `BoardEditor` que a envolve |
+
+Decisões confirmadas na Fase 4:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Compartilhar | **Uma operação só**: gera o token e torna a prancheta pública | Entregar um token sem tornar a prancheta pública devolveria um link que não abre. Os dois mecanismos seguem separados no banco (`docs/03` §6.2) |
+| Nº de links | **Um ativo por prancheta**, com o token reaproveitado | A tabela segue 1:N, mas trocar a URL a cada clique quebraria o link já enviado a terceiros |
+| Revogação | **Torna privada sem apagar o link** | `docs/03` §6.2 define exatamente isso; permite voltar a compartilhar com a mesma URL |
+| Acesso negado | **404** em todos os casos | O token é o segredo. Distinguir os motivos confirmaria que alguém acertou um token. Difere do 403 da Fase 2, onde o id é adivinhável |
+| `expires_at` | **Coluna e regra sim, interface não** | RF-014 não pede expiração; o campo fica pronto para quando pedir |
+| Token | **`Str::random(32)`**, coluna `varchar(64)` única | ~190 bits de entropia; o índice único transforma colisão em erro, não em vazamento |
+| Layout público | **`layouts/public.blade.php` próprio**, sem Livewire | O `guest` é o cartão estreito das telas de auth. A página pública é estática |
+| Policy | **`share()` própria**, não reuso de `update()` | RN-001 lista gerar links entre os poderes do dono; nomear deixa a regra visível no `route:list` |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).

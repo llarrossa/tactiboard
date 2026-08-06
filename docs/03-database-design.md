@@ -404,6 +404,24 @@ O token deve:
 - Ser difícil de prever.
 - Permitir acesso público controlado.
 
+## Formato adotado
+
+Decisão registrada na Fase 4 (2026-08-06).
+
+O token é uma string de **32 caracteres alfanuméricos**, gerada por
+`Str::random(32)` em `GenerateSharedLinkAction`. A coluna é `varchar(64)` com
+índice `UNIQUE`.
+
+Trinta e dois caracteres do alfabeto do `Str::random` dão cerca de 190 bits de
+entropia — inviável de adivinhar por tentativa, e o índice único garante que uma
+colisão vire erro de gravação em vez de vazamento silencioso de prancheta.
+
+O token **é reaproveitado** quando o dono compartilha de novo: recompartilhar não
+pode invalidar a URL que ele já enviou a outras pessoas. A consequência é que um
+link vazado continua sendo o mesmo ao recompartilhar — tornar a prancheta privada
+derruba o acesso, mas não aposenta o token. Um botão de gerar link novo resolve
+e é candidato à Fase 5; RF-014 não o pede.
+
 ---
 
 ## 7.2 Regra de acesso público
@@ -417,6 +435,32 @@ Um visitante sem conta só visualiza a prancheta quando todas as condições for
 Qualquer condição não atendida deve negar o acesso.
 
 O acesso público é sempre somente leitura.
+
+## Onde a regra vive
+
+Decisão registrada na Fase 4 (2026-08-06).
+
+O scope **`SharedLink::accessible()`** centraliza duas das três condições —
+prancheta pública e link não expirado. A terceira, "o token existe", é o
+`where('token', …)` de quem consulta: o token é o dado que se procura, não uma
+regra a aplicar.
+
+Quem precisa resolver um token usa o scope em vez de repetir as regras — é o
+mesmo papel que `App\Rules\CanvasRules` cumpre para o canvas.
+
+## Resposta ao acesso negado: 404
+
+Falhar em qualquer uma das condições produz **404**, não 403.
+
+Isso difere da área autenticada, onde a Fase 2 escolheu 403 (`docs/05` §5): lá o
+id é sequencial e adivinhável de qualquer forma, então revelar que a prancheta
+existe não entrega nada. Aqui o token *é* o segredo. Distinguir "token
+inexistente" de "token válido, mas prancheta privada" confirmaria a um visitante
+que ele acertou um token — exatamente o que o formato longo procura evitar.
+
+A página pública também declara `noindex, nofollow`: quem tem o link já tem o
+acesso, e indexar tornaria público o que o dono escolheu enviar a pessoas
+específicas.
 
 ---
 

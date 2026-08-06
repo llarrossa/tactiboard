@@ -239,7 +239,7 @@ Criar testes para:
 | Item | Estado |
 |---|---|
 | Banco | Tabela `boards` conforme `docs/03` §6, com os três índices de §9 |
-| Model | `Board` com `user()`, casts de enum e do canvas, scope `ownedBy` |
+| Model | `Board` com `user()`, casts de enum e do canvas |
 | Enums | `BoardCategory` e `BoardVisibility`, persistidos em inglês e exibidos em português |
 | Camadas | `CreateBoardAction`, `UpdateBoardAction`, `DeleteBoardAction`; `CreateBoardRequest` e `UpdateBoardRequest` |
 | Autorização | `BoardPolicy` (view, update, delete), presa às rotas por `can` |
@@ -405,6 +405,8 @@ entregou exatamente o que prometia — o editor inteiro coube sem tocar no schem
 
 # 7. Fase 4 — Compartilhamento Público
 
+**Status: concluída em 2026-08-06.**
+
 ## Objetivo
 
 Permitir que análises sejam compartilhadas externamente.
@@ -415,9 +417,9 @@ Permitir que análises sejam compartilhadas externamente.
 
 Implementar:
 
-- Criar link público.
-- Visualização pública.
-- Controle de acesso.
+- [x] Criar link público.
+- [x] Visualização pública.
+- [x] Controle de acesso.
 
 ---
 
@@ -425,8 +427,8 @@ Implementar:
 
 Criar:
 
-- Migration shared_links.
-- Model SharedLink.
+- [x] Migration shared_links.
+- [x] Model SharedLink.
 
 ---
 
@@ -434,16 +436,90 @@ Criar:
 
 Garantir:
 
-- Visitante não consegue editar.
-- Apenas visualizar.
-- Prancheta privada nega acesso mesmo com token válido.
-- Token inválido nega acesso mesmo com prancheta pública.
+- [x] Visitante não consegue editar.
+- [x] Apenas visualizar.
+- [x] Prancheta privada nega acesso mesmo com token válido.
+- [x] Token inválido nega acesso mesmo com prancheta pública.
 
 ---
 
 ## Critérios de conclusão
 
-Uma pessoa sem conta consegue acessar uma análise através de um link.
+- [x] Uma pessoa sem conta consegue acessar uma análise através de um link.
+
+---
+
+## Resultado
+
+| Item | Estado |
+|---|---|
+| Banco | Tabela `shared_links` conforme `docs/03` §7, com `board_id` em cascata e `token` único |
+| Model | `SharedLink` com `board()`, cast de `expires_at` e o scope `accessible()` |
+| Camadas | `GenerateSharedLinkAction` e `RevokeSharedLinkAction`; `SharedLinkController` (dono) e `SharedBoardController` (anônimo) |
+| Autorização | `BoardPolicy::share()`, presa às rotas de escrita por `can`; a rota pública não usa Policy |
+| Telas | Painel de compartilhamento em `boards.show`; `share/show` sobre o novo `layouts/public` |
+| Testes | 169 testes, 562 asserções, todos passando |
+| Formatação | Laravel Pint sem violações |
+
+Com esta fase os critérios de aceitação do MVP (`docs/02` §11) estão todos
+atendidos.
+
+### Decisões desta fase
+
+1. **Compartilhar é uma operação só.** A Action gera o token *e* define
+   `visibility = public`. Os dois mecanismos continuam separados no banco e na
+   regra de acesso (`docs/03` §6.2); o que se unifica é a operação de produto —
+   entregar um token sem tornar a prancheta pública devolveria um link que não
+   abre.
+2. **Um link ativo por prancheta.** A tabela permanece 1:N como §8 define, mas a
+   interface mantém um único link, e compartilhar de novo **reaproveita o token**.
+   Trocar a URL a cada clique quebraria o link já enviado a outras pessoas.
+3. **Revogar não apaga o link.** `docs/03` §6.2 define que tornar a prancheta
+   privada revoga o acesso *sem remover* os links. Assim o dono volta a
+   compartilhar depois com a mesma URL.
+4. **Acesso público negado responde 404**, em todos os casos. Ver `docs/03` §7.2.
+5. **`expires_at` sem interface.** A coluna e a regra são implementadas e
+   testadas, mas nenhuma tela define expiração — RF-014 não pede. O campo fica
+   pronto para quando pedir.
+6. **Layout público próprio.** O `guest.blade.php` é o cartão estreito das telas
+   de autenticação. Ver `docs/04` §8.4.
+
+### Limitações conhecidas
+
+1. Como compartilhar reaproveita o token, **um link que vaze continua o mesmo ao
+   recompartilhar**. Tornar a prancheta privada derruba o acesso enquanto ela
+   estiver privada, mas não aposenta o token. Um botão "gerar novo link" resolve
+   e é candidato à Fase 5 — não entrou aqui porque RF-014 não pede.
+2. **A serialização de dois compartilhamentos simultâneos não tem teste de
+   regressão.** `GenerateSharedLinkAction` trava a linha da prancheta com
+   `lockForUpdate()`, mas provar isso exigiria um teste com requisições
+   concorrentes de verdade, que a suíte não sabe montar hoje. O comportamento
+   sequencial está coberto.
+
+### Por que `board_id` não é único
+
+A auditoria sugeriu um índice único em `shared_links.board_id` para impor "um
+link por prancheta" no banco. Foi recusado: §8 deste documento define o
+relacionamento como **1:N** de propósito, e o índice único contradiria o schema
+documentado, fechando a evolução que ele antecipa. O "um link ativo" é invariante
+**da interface**, garantido pelo lock na Action.
+
+Pelo mesmo raciocínio, não há *retry* em colisão de token: 32 caracteres dão
+entropia suficiente para tornar a colisão desprezível, e o índice único faz a
+gravação falhar fechada — que é o comportamento correto.
+
+### Aprendizados
+
+- **O canvas fora do editor precisa de dois cuidados** — desligar as ligações de
+  arrasto e passar por `CanvasRules::drawable()`. Sem o segundo, um `canvas_data`
+  editado à mão no banco serviria 500 a um visitante anônimo. Ver `docs/04` §8.4.
+- **`x-model` deixa o campo vazio no HTML servido.** A URL do link estava só no
+  estado do Alpine, então não existia antes de a página hidratar — e um teste que
+  procurava a URL na resposta reprovou. Passou a vir no atributo `value`, com o
+  Alpine lendo dela por `$refs`.
+- **`navigator.clipboard` não existe em contexto inseguro.** Em HTTP fora de
+  `localhost` o botão de copiar falharia em silêncio. Ele agora seleciona o texto
+  sempre e só sinaliza "copiado" quando a cópia de fato aconteceu.
 
 ---
 
