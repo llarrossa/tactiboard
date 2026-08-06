@@ -104,6 +104,14 @@ test('mover um elemento que ja nao existe nao quebra o editor', function () {
     expect($editor->get('elements'))->toHaveCount(1);
 });
 
+test('remover um elemento que ja nao existe nao muda o canvas', function () {
+    // O id chega do navegador e pode se referir a uma peca que outra aba ja
+    // removeu. Sair sem alterar nada e o comportamento certo.
+    $editor = editorWith([ball('b1')])->call('removeElement', 'fantasma')->assertOk();
+
+    expect(array_column($editor->get('elements'), 'id'))->toBe(['b1']);
+});
+
 test('clicar em um elemento seleciona ele', function () {
     $editor = editorWith([ball(), ball('b2')])->call('select', 'b2');
 

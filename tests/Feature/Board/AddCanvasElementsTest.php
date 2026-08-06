@@ -129,6 +129,24 @@ test('o editor recusa passar do limite de elementos', function () {
         ->assertCount('elements', CanvasRules::MAX_ELEMENTS);
 });
 
+test('com os 99 numeros do lado em campo o jogador novo repete o ultimo', function () {
+    // Recusar o elemento seria pior: o usuario ajusta o numero no painel, e um
+    // campo com 99 jogadores do mesmo lado ja saiu do uso real ha muito.
+    $lotado = array_map(fn (int $numero) => [
+        'id' => 'p'.$numero,
+        'type' => 'player',
+        'team' => 'home',
+        'number' => $numero,
+        'x' => 100,
+        'y' => 100,
+    ], range(1, 99));
+
+    $editor = editorWith($lotado)->call('addPlayer', 'home');
+
+    expect($editor->get('elements'))->toHaveCount(100)
+        ->and($editor->get('elements')[99]['number'])->toBe(99);
+});
+
 test('um usuario nao adiciona elementos na prancheta de outro', function () {
     $owner = User::factory()->create();
     $board = Board::factory()->for($owner)->create();
