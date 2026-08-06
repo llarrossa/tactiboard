@@ -372,6 +372,10 @@ Pontos da Fase 6 que valem lembrar:
 - **Não há CI.** A suíte e o Pint rodam na máquina de quem desenvolve.
 
 Pontos da Fase 5 que valem lembrar:
+- **O deslocamento do arrasto só é solto quando o servidor responde.** O
+  `tactiboardCanvasDrag()` guarda em `settling` o que já foi enviado; zerar isso
+  no `endDrag()` faz a peça voltar à posição anterior por um instante e depois
+  pular para o lugar certo. Ver `docs/04` §8.6.
 - **`touch-action: none` vive na peça, não no campo.** Desligado no campo
   inteiro, o dedo sobre a grama não rola a página e a prancheta prende a tela no
   celular. Não voltar a pôr `touch-none` no `<x-field>`.

@@ -602,6 +602,56 @@ uma peça já presa na borda.
 
 ---
 
+## 8.6 O arrasto não pisca ao soltar
+
+Correção registrada na Fase 6 (2026-08-06), depois de o comportamento ser
+percebido no uso real.
+
+O arrasto acontece em duas camadas: enquanto o dedo ou o ponteiro se move, o
+deslocamento vive no Alpine e é aplicado como `transform` no grupo do elemento;
+ao soltar, ele vira uma chamada `moveElement` e a posição definitiva vem do
+servidor, que é quem aplica o limite do campo.
+
+O `endDrag()` zerava o deslocamento **antes** de a resposta chegar. Nessa janela
+— entre 50 e 150 ms em rede local, mais em rede ruim — o desenho voltava a usar
+o `x`/`y` gravado, ou seja, a peça saltava para a posição anterior e só depois
+pulava para onde tinha sido solta.
+
+A correção mantém o deslocamento aplicado até a chamada responder:
+`tactiboardCanvasDrag()` guarda em `settling`, por id, uma **fila** dos
+deslocamentos já enviados, e `offsetFor()` soma o que está na fila com o gesto em
+curso. Somar importa: agarrar a mesma peça de novo antes da resposta precisa
+partir de onde ela está na tela, e não da posição que o desenho ainda carrega —
+sem isso o segundo `pointerdown` reabriria exatamente o salto que esta correção
+fecha.
+
+A fila anda uma posição por **chamada confirmada**, e não por resposta HTTP: o
+Livewire adia as chamadas seguintes enquanto há uma mensagem em voo e as dispara
+na ordem, mas pode agrupar em uma única mensagem as que nascem na mesma janela de
+alguns milissegundos — nesse caso uma resposta resolve mais de uma promessa e
+`landed()` roda mais de uma vez. O que importa é a correspondência: cada
+confirmação retira do visual exatamente o deslocamento que o desenho acabou de
+receber. Se a chamada for **recusada** — a sessão pode ter mudado com o editor
+aberto —, a fila inteira é descartada: a peça volta para o que está gravado, que
+é a única posição que existe de verdade.
+
+A fila não tem teto, e isso é deliberado: com a rede fora do ar, cada arrasto
+acrescenta um item e a peça fica onde o usuário a soltou. Limitar o tamanho
+devolveria o salto justamente na situação em que segurar a posição mais importa,
+e o custo de memória de alguns objetos com dois números é irrelevante perto
+disso.
+
+O arrasto de **ponta de seta** fica de fora dessa espera, como já ficava da
+prévia durante o gesto: o deslocamento de uma ponta aplicado ao grupo moveria a
+seta inteira. Ali a posição continua aparecendo só quando o servidor responde.
+
+A verificação foi feita no navegador, com um amostrador por quadro sobre o
+`transform` do grupo e o `cx` do elemento. Antes da correção existia um quadro
+com `transform` vazio e a coordenada antiga; depois dela, não existe. Os atalhos
+e o arrasto seguem sem teste automatizado, como registrado em `docs/05` §8.
+
+---
+
 # 9. Persistência do Canvas
 
 O conteúdo visual da prancheta será armazenado em JSON.
