@@ -462,6 +462,51 @@ porque uma sessão pode mudar depois que o editor já está aberto.
 
 ---
 
+## 8.4 A fronteira pública
+
+Decisão registrada na Fase 4 (2026-08-06).
+
+`/share/{token}` é a **única rota anônima do produto**. Ela fica fora de qualquer
+grupo de autenticação de propósito: quem abre o link não tem conta, então não há
+sessão, não há `User` e a `BoardPolicy` não se aplica. O que autoriza é o token
+somado ao estado da prancheta (`docs/03` §7.2).
+
+Três consequências moldaram a implementação:
+
+### Controllers separados
+
+`SharedLinkController` (gerar e revogar) vive na área autenticada, com
+`can('share', 'board')` na rota. `SharedBoardController` (visualizar) é anônimo.
+São fronteiras com regras de acesso diferentes, e juntá-las num controller só
+faria a autorização depender de qual método foi chamado.
+
+`BoardPolicy` ganhou `share()`, em vez de reusar `update()`: RN-001 lista "gerar
+links de compartilhamento" entre os poderes do proprietário, e nomear a regra a
+deixa visível no `route:list`.
+
+### Layout próprio para o visitante
+
+`layouts/public.blade.php` existe porque `layouts/guest.blade.php` é o cartão
+`sm:max-w-md` das telas de autenticação — estreito demais para um campo de
+futebol. O layout público não declara `@livewireScripts`: a página é estática, e
+carregar o Livewire ali só aumentaria o peso de uma tela que ninguém edita.
+
+### O canvas precisa de dois cuidados fora do editor
+
+1. **`<x-canvas.element>` ganhou a prop `interactive`** (default `true`). O grupo
+   do elemento carrega `x-bind:transform="offsetFor(...)"` e
+   `x-on:pointerdown="startDrag(...)"`, funções que vêm do `tactiboardCanvasDrag()`
+   do `BoardEditor`. Numa página sem esse componente elas não existem: o desenho
+   apareceria, mas o console encheria de erro e a página sugeriria um arrasto que
+   não acontece.
+2. **`CanvasRules::drawable()` também roda na página pública.** O canvas gravado
+   sempre passou pela validação, mas `element.blade.php` resolve o tipo com
+   `CanvasElementType::from()`, que lança exceção em tipo desconhecido. Um
+   registro editado à mão no banco serviria **500 a um visitante anônimo**. O
+   filtro já existia para o editor e é reuso, não código novo.
+
+---
+
 # 9. Persistência do Canvas
 
 O conteúdo visual da prancheta será armazenado em JSON.

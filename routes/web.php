@@ -3,11 +3,18 @@
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SharedBoardController;
+use App\Http\Controllers\SharedLinkController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// RF-015: fora de qualquer grupo de autenticacao, de proposito. O acesso e
+// controlado pelo token e pelo estado da prancheta (docs/03 §7.2), nunca por
+// sessao — quem abre o link nao tem conta.
+Route::get('/share/{token}', [SharedBoardController::class, 'show'])->name('share.show');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -27,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/boards/{board}/edit', [BoardController::class, 'edit'])->name('boards.edit')->can('update', 'board');
     Route::put('/boards/{board}', [BoardController::class, 'update'])->name('boards.update')->can('update', 'board');
     Route::delete('/boards/{board}', [BoardController::class, 'destroy'])->name('boards.destroy')->can('delete', 'board');
+
+    Route::post('/boards/{board}/share', [SharedLinkController::class, 'store'])->name('boards.share.store')->can('share', 'board');
+    Route::delete('/boards/{board}/share', [SharedLinkController::class, 'destroy'])->name('boards.share.destroy')->can('share', 'board');
 });
 
 require __DIR__.'/auth.php';
