@@ -649,6 +649,8 @@ nulo; o comportamento foi confirmado no navegador. O código está correto.
 
 # 9. Fase 6 — Qualidade e Profissionalização
 
+**Status: concluída em 2026-08-06.**
+
 ## Objetivo
 
 Preparar o projeto para ambiente real.
@@ -661,8 +663,8 @@ Preparar o projeto para ambiente real.
 
 Aumentar cobertura:
 
-- Feature tests.
-- Unit tests.
+- [x] Feature tests.
+- [x] Unit tests.
 
 ---
 
@@ -670,10 +672,10 @@ Aumentar cobertura:
 
 Revisar:
 
-- Organização.
-- Duplicações.
-- Performance.
-- Padrões.
+- [x] Organização.
+- [x] Duplicações.
+- [x] Performance.
+- [x] Padrões.
 
 ---
 
@@ -681,9 +683,112 @@ Revisar:
 
 Criar:
 
-- README.
-- Guia de instalação.
-- Documentação de funcionalidades.
+- [x] README.
+- [x] Guia de instalação.
+- [x] Documentação de funcionalidades.
+
+---
+
+## Critérios de conclusão
+
+Definidos na abertura da fase (2026-08-06). Todas as outras fases têm critérios
+verificáveis, e §2 deste documento exige que tenham; "preparar o projeto para
+ambiente real" descreve a intenção, mas não diz o que se confere ao fechar.
+
+- [x] Suíte verde e cobertura de linhas **igual ou superior a 97%**, medida por
+      `sail pest --coverage`. A fase abriu em 96,0% e fechou em **98,8%**.
+- [x] Laravel Pint sem violações.
+- [x] README descrevendo o produto que existe hoje, e não uma fase anterior.
+- [x] Guia de instalação conferido passo a passo, e não apenas escrito.
+- [x] Documentação de funcionalidades publicada, cobrindo RF-001 a RF-015 e as
+      limitações conhecidas.
+- [x] Auditoria com Codex realizada, sem apontamento em aberto — cada um
+      corrigido, ou recusado com justificativa registrada.
+
+Os 4% que faltavam para a meta de cobertura tinham nome e endereço: o bloqueio
+por tentativas do login, dois enums do domínio sem teste unitário e as guardas
+defensivas do editor. É justamente o código que ninguém exercita à mão. O que
+ficasse de fora precisaria estar registrado como decisão, e não passar por
+esquecimento — é o caso da verificação de e-mail, instalada e inativa desde a
+Fase 1.
+
+---
+
+## Resultado
+
+| Item | Estado |
+|---|---|
+| Testes | 245 testes, 748 asserções, todos passando (eram 232 / 693) |
+| Cobertura | **98,8%**, de 96,0% na abertura da fase |
+| Formatação | Laravel Pint sem violações |
+| Documentação | `08-features.md` novo, README reescrito, `docs/04` §11.1 e `docs/06` §13 |
+| Código | `preventLazyLoading` fora de produção, duas guardas inalcançáveis removidas, helper de teste duplicado consolidado |
+| Repositório | Captura de verificação removida do versionamento e esqueleto do Pest limpo |
+| Banco | Sem migrations novas |
+| Dependências | Nenhuma nova |
+
+### Decisões desta fase
+
+1. **A fase começou escrevendo os próprios critérios de conclusão.** Ela era a
+   única sem eles, contra o §2 deste documento. "Preparar o projeto para
+   ambiente real" descreve intenção; não diz o que se confere ao fechar.
+2. **`Model::preventLazyLoading()` ligado fora de produção**, com eager load
+   explícito em `BoardController::show()` e `SharedBoardController::show()`. Em
+   produção fica desligado: uma consulta a mais é melhor do que uma tela de
+   erro. Ver `docs/04` §11.1.
+3. **A verificação de e-mail continua sem teste**, e isso passa a ser exclusão
+   registrada em `docs/06` §13 — testá-la cobriria código que o produto não usa,
+   porque o recurso está inativo desde a Fase 1.
+4. **Sem integração contínua.** Rodar a suíte no GitHub Actions seria útil, mas
+   não está entre os itens desta fase; entra quando for pedido, e não por
+   iniciativa da fase de qualidade.
+5. **A documentação de funcionalidades virou documento próprio** (`docs/08`), e
+   não uma seção do README. O README é a porta de entrada e precisa caber em uma
+   leitura; a descrição funcional cresce com o produto.
+6. **As guardas inalcançáveis foram removidas, não testadas.** Escrever teste
+   para um caminho impossível daria cobertura sem dar proteção.
+
+### Aprendizados
+
+- **Guia de instalação só se confere executando.** Rodando os passos do README em
+  uma cópia limpa, o `migrate` falhou com `SQLSTATE[HY000] [2002] Connection
+  refused`: na primeira subida o MySQL ainda está inicializando. Ninguém tinha
+  notado porque o ambiente da máquina já estava de pé há meses. Virou aviso no
+  README.
+- **Cobertura aponta código morto, não só teste faltando.** As duas guardas
+  `is_array()` do `BoardEditor` nunca eram executadas porque `indexOf()` só
+  devolve índice de elemento que é array. O relatório apontava a linha; a causa
+  era a guarda existir.
+- **Teste de bloqueio que só olha a tentativa bloqueada não prova o limite.**
+  Apontamento da auditoria: verificar apenas que a sexta tentativa falha deixa
+  passar um bloqueio que começa na quinta. As cinco primeiras precisam ser
+  conferidas uma a uma.
+- **Nome de teste é promessa.** "O bloqueio vale por e-mail e endereço" só
+  passou a valer quando o teste trocou o endereço, e não apenas o e-mail.
+
+### Achados da auditoria com Codex
+
+A auditoria (gpt-5.4, esforço alto) apontou quatro itens, todos corrigidos antes
+do fechamento — dois de severidade média e dois baixa:
+
+1. Os testes do bloqueio de login não provavam o limite de cinco tentativas.
+2. O teste da chave `email|ip` variava só o e-mail.
+3. `docs/08` descrevia o contador da toolbar como `n/100`, e a interface mostra
+   texto localizado.
+4. O README apontava `docs/06` §13 para uma regra que está em §14.
+
+A segunda auditoria, sobre as correções, não encontrou apontamento em aberto nem
+regressão. Nenhum apontamento foi recusado nesta fase.
+
+### Limitações conhecidas
+
+1. **Não há integração contínua**: a suíte e o Pint rodam na máquina de quem
+   desenvolve. Decisão 4 acima.
+2. **O JavaScript do editor continua sem teste automatizado.** Arrasto e atalhos
+   vivem no Alpine; a suíte cobre o que a página entrega e os métodos que eles
+   chamam. Registrado desde a Fase 5.
+3. **A cobertura de 98,8% exclui os controllers de verificação de e-mail**,
+   recurso inativo por decisão.
 
 ---
 

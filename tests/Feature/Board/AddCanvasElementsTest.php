@@ -4,20 +4,10 @@ use App\Livewire\BoardEditor;
 use App\Models\Board;
 use App\Models\User;
 use App\Rules\CanvasRules;
-use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
-function editorFor(?User $user = null): Testable
-{
-    $user ??= User::factory()->create();
-
-    return Livewire::actingAs($user)->test(BoardEditor::class, [
-        'board' => Board::factory()->for($user)->create(),
-    ]);
-}
-
 test('cada tipo de elemento pode ser adicionado ao campo', function () {
-    $editor = editorFor()
+    $editor = editorWith([])
         ->call('addPlayer', 'home')
         ->call('addPlayer', 'away')
         ->call('addBall')
@@ -32,7 +22,7 @@ test('cada tipo de elemento pode ser adicionado ao campo', function () {
 test('os elementos adicionados sao aceitos pelas regras do canvas', function () {
     // Se o editor cria um elemento que a validacao recusa, o usuario monta a
     // jogada e nao consegue salvar. Este teste fecha essa porta.
-    editorFor()
+    editorWith([])
         ->call('addPlayer', 'home')
         ->call('addPlayer', 'away')
         ->call('addBall')
@@ -44,7 +34,7 @@ test('os elementos adicionados sao aceitos pelas regras do canvas', function () 
 });
 
 test('cada elemento nasce com um id proprio', function () {
-    $editor = editorFor()
+    $editor = editorWith([])
         ->call('addBall')
         ->call('addBall')
         ->call('addBall');
@@ -57,7 +47,7 @@ test('cada elemento nasce com um id proprio', function () {
 });
 
 test('os jogadores recebem o menor numero livre de cada lado', function () {
-    $editor = editorFor()
+    $editor = editorWith([])
         ->call('addPlayer', 'home')
         ->call('addPlayer', 'home')
         ->call('addPlayer', 'away');
@@ -71,7 +61,7 @@ test('os jogadores recebem o menor numero livre de cada lado', function () {
 });
 
 test('o numero livre considera os buracos deixados por remocoes', function () {
-    $editor = editorFor()
+    $editor = editorWith([])
         ->call('addPlayer', 'home')
         ->call('addPlayer', 'home')
         ->call('addPlayer', 'home');
@@ -85,7 +75,7 @@ test('o numero livre considera os buracos deixados por remocoes', function () {
 });
 
 test('os elementos novos nascem dentro do campo', function () {
-    $editor = editorFor();
+    $editor = editorWith([]);
 
     foreach (range(1, 12) as $ignored) {
         $editor->call('addBall');
@@ -100,7 +90,7 @@ test('os elementos novos nascem dentro do campo', function () {
 });
 
 test('a seta nasce com os dois pontos e sem coordenada solta', function () {
-    $arrow = editorFor()->call('addArrow')->get('elements')[0];
+    $arrow = editorWith([])->call('addArrow')->get('elements')[0];
 
     expect($arrow)->toHaveKeys(['start', 'end'])
         ->and($arrow)->not->toHaveKey('x')
@@ -108,7 +98,7 @@ test('a seta nasce com os dois pontos e sem coordenada solta', function () {
 });
 
 test('um lado de jogador invalido e recusado', function () {
-    editorFor()->call('addPlayer', 'arbitro')->assertStatus(400);
+    editorWith([])->call('addPlayer', 'arbitro')->assertStatus(400);
 });
 
 test('o editor recusa passar do limite de elementos', function () {
@@ -129,6 +119,24 @@ test('o editor recusa passar do limite de elementos', function () {
         ->assertCount('elements', CanvasRules::MAX_ELEMENTS);
 });
 
+test('com os 99 numeros do lado em campo o jogador novo repete o ultimo', function () {
+    // Recusar o elemento seria pior: o usuario ajusta o numero no painel, e um
+    // campo com 99 jogadores do mesmo lado ja saiu do uso real ha muito.
+    $lotado = array_map(fn (int $numero) => [
+        'id' => 'p'.$numero,
+        'type' => 'player',
+        'team' => 'home',
+        'number' => $numero,
+        'x' => 100,
+        'y' => 100,
+    ], range(1, 99));
+
+    $editor = editorWith($lotado)->call('addPlayer', 'home');
+
+    expect($editor->get('elements'))->toHaveCount(100)
+        ->and($editor->get('elements')[99]['number'])->toBe(99);
+});
+
 test('um usuario nao adiciona elementos na prancheta de outro', function () {
     $owner = User::factory()->create();
     $board = Board::factory()->for($owner)->create();
@@ -141,7 +149,7 @@ test('um usuario nao adiciona elementos na prancheta de outro', function () {
 });
 
 test('um elemento malformado nao derruba o editor e nao e desenhado', function () {
-    $editor = editorFor()->call('addBall');
+    $editor = editorWith([])->call('addBall');
 
     $valido = $editor->get('elements')[0];
 

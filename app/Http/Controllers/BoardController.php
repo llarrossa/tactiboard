@@ -42,7 +42,10 @@ class BoardController extends Controller
     public function show(Board $board): View
     {
         return view('boards.show', [
-            'board' => $board,
+            // O painel de compartilhamento le o link da prancheta. Carregar
+            // aqui evita a consulta escondida dentro da view — que o
+            // preventLazyLoading do AppServiceProvider recusa.
+            'board' => $board->load('sharedLinks'),
         ]);
     }
 

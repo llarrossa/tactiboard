@@ -53,8 +53,10 @@ qualquer alteração relevante**.
 | `docs/05-development-roadmap.md` | Ordem das fases e critérios de conclusão |
 | `docs/06-coding-guidelines.md` | Padrões de código, nomenclatura, testes, git |
 | `docs/07-ai-development-guide.md` | Fluxo de trabalho de IA, uso do Codex |
+| `docs/08-features.md` | O que o produto faz hoje: funcionalidades, limites e onde cada uma vive |
 
-Ordem de prioridade em caso de dúvida: 01 → 02 → 03 → 04 → 05 → 06 → 07.
+Ordem de prioridade em caso de dúvida: 01 → 02 → 03 → 04 → 05 → 06 → 07. O 08
+descreve o produto existente; ele não decide, registra.
 
 **Conflito entre código e documentação:** analisar o motivo, informar o conflito,
 propor solução e aguardar decisão quando for relevante. Nunca resolver
@@ -329,9 +331,10 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-06):** **Fases 0 a 5 concluídas.** A aplicação
-Laravel 12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está
-conectado e o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
+**Estado atual (2026-08-06):** **Fases 0 a 6 concluídas — o MVP está pronto.**
+A aplicação Laravel 12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco
+`tactiboard` está conectado e o projeto está versionado em
+`git@github.com:llarrossa/tactiboard.git`.
 
 A Fase 1 entregou a fundação: autenticação com Breeze, layout base com navbar,
 dashboard e perfil. A Fase 2 entregou o núcleo do produto: tabela `boards`, model
@@ -340,13 +343,33 @@ editor tático: campo em SVG, os seis elementos, arrastar/selecionar/remover e a
 persistência do canvas. A Fase 4 entregou o compartilhamento: tabela
 `shared_links`, link público e visualização sem cadastro. A Fase 5 tornou o
 editor confortável: duplicar, limpar campo, atalhos de teclado, toolbar agrupada,
-responsividade, aviso de alteração pendente e o botão de gerar link novo. Tudo em
-português. A suíte tem **232 testes / 693 asserções**, todos passando, e o Pint
-está limpo.
+responsividade, aviso de alteração pendente e o botão de gerar link novo. A Fase 6
+fechou a qualidade: cobertura de 98,8%, carregamento tardio bloqueado fora de
+produção, README reescrito e `docs/08-features.md`. Tudo em português. A suíte tem
+**245 testes / 748 asserções**, todos passando, e o Pint está limpo.
 
 Os critérios de aceitação do MVP (`docs/02` §11) estão **todos atendidos** desde
-a Fase 4. Próximo passo: **Fase 6** (qualidade — cobertura de testes, revisão
-geral, README e documentação de instalação).
+a Fase 4. Próximo passo: **Fase 7** — funcionalidades fora do MVP (biblioteca de
+jogadas, animações, colaboração, vídeos, IA), que **só começa quando pedida**.
+
+Pontos da Fase 6 que valem lembrar:
+- **`Model::preventLazyLoading()` está ligado fora de produção.** Carregar
+  relacionamento dentro de view agora estoura na hora, e a suíte acusa. Quem
+  criar tela que lê `sharedLinks`, `board` ou `user` precisa carregar antes, no
+  controller. Em produção a proteção fica desligada de propósito. Ver `docs/04`
+  §11.1.
+- **A cobertura mínima é 97%** (`docs/06` §13), e hoje está em 98,8%. O que
+  ficar descoberto tem de ser decisão registrada: a única exclusão são os
+  controllers de verificação de e-mail, recurso inativo desde a Fase 1.
+- **`indexOf()` do `BoardEditor` só devolve índice de elemento que é array.**
+  As guardas `is_array()` depois dele eram inalcançáveis e foram removidas — não
+  recolocar.
+- **O `migrate` falha na primeira subida** enquanto o MySQL inicializa
+  (`Connection refused`). É esperado; repetir o comando resolve, e o README
+  avisa.
+- **`docs/08-features.md` descreve o produto como ele é.** Mudou comportamento
+  visível ao usuário? O 08 muda junto, ou passa a mentir.
+- **Não há CI.** A suíte e o Pint rodam na máquina de quem desenvolve.
 
 Pontos da Fase 5 que valem lembrar:
 - **`touch-action: none` vive na peça, não no campo.** Desligado no campo
@@ -445,7 +468,7 @@ Pontos das fases anteriores que valem lembrar:
 | **3** ✅ | Editor tático: campo, elementos, manipulação, persistência JSON | **Concluída** — usuário cria jogada, salva, reabre mantendo o estado |
 | **4** ✅ | Compartilhamento: `shared_links`, link público, visualização | **Concluída** — pessoa sem conta acessa a análise pelo link, sem editar |
 | **5** ✅ | UX: toolbar, atalhos, duplicar, limpar campo, responsividade | **Concluída** — editor confortável para uso real |
-| **6** | Qualidade: cobertura de testes, revisão, README e docs | Projeto pronto para ambiente real |
+| **6** ✅ | Qualidade: cobertura de testes, revisão, README e docs | **Concluída** — cobertura 98,8%, Pint limpo, guia de instalação conferido, `docs/08` publicado, auditoria sem apontamento aberto |
 | **7** | Futuro (fora do MVP): biblioteca, animações, colaboração, vídeos, IA | — |
 
 Detalhes e tarefas de cada fase: `docs/05-development-roadmap.md`.
@@ -594,6 +617,18 @@ Decisões confirmadas na Fase 5:
 | Alteração pendente | **Marca posta por quem escreve**, não comparação com o banco | O `clamp` devolve float onde o gravado pode ter inteiro, e a comparação acusaria mudança em elemento parado |
 | Gerar link novo | **Troca o token sem tocar em `visibility`** | Os dois mecanismos seguem separados (`docs/03` §6.2): muda *por onde* o acesso acontece, não *se* ele pode acontecer |
 | Toque no celular | **`touch-action: none` na peça, não no campo** | No campo inteiro, o dedo sobre a grama não rolava a página |
+
+Decisões confirmadas na Fase 6:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Critérios da fase | **Escritos na abertura**, em `docs/05` §9 | Era a única fase sem critérios, contra o §2 do próprio roadmap |
+| Carregamento tardio | **Bloqueado fora de produção** | O N+1 dentro de view não falha nem avisa; em produção, consulta a mais é melhor que tela de erro |
+| Cobertura mínima | **97%**, hoje em 98,8% | Abaixo disso ficam de fora os caminhos que ninguém exercita à mão |
+| Verificação de e-mail | **Segue sem teste**, como exclusão registrada | Testá-la cobriria código que o produto não usa |
+| Integração contínua | **Não** | Não está entre os itens da fase; entra quando for pedida |
+| Documentação de funcionalidades | **Documento próprio** (`docs/08`) | O README é porta de entrada e precisa caber em uma leitura |
+| Guardas inalcançáveis | **Removidas**, não testadas | Teste de caminho impossível dá cobertura sem dar proteção |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).

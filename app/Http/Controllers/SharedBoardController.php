@@ -23,13 +23,14 @@ class SharedBoardController extends Controller
         $link = SharedLink::query()
             ->where('token', $token)
             ->accessible()
+            ->with('board')
             ->firstOrFail();
 
         $board = $link->board;
 
-        // A prancheta e carregada em uma segunda consulta, entao ela pode ter
-        // sido excluida entre uma e outra. O cascade removeria o link junto,
-        // mas esta requisicao ja o tem em memoria — sem esta guarda o visitante
+        // A prancheta vem junto do link, mas pode ter sido excluida entre a
+        // consulta e o uso. O cascade removeria o link junto, so que esta
+        // requisicao ja o tem em memoria — sem esta guarda o visitante
         // receberia 500 em vez de 404.
         abort_if($board === null, 404);
 

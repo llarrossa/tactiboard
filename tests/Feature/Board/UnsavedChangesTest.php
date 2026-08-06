@@ -54,6 +54,14 @@ test('selecionar um elemento nao marca alteracao pendente', function () {
     expect($editor->get('hasUnsavedChanges'))->toBeFalse();
 });
 
+test('escrever numa propriedade fora do canvas nao marca alteracao pendente', function () {
+    // `updated()` roda para toda propriedade publica, e nem toda escrita e
+    // edicao da jogada: a selecao vive no componente e nao vai para o banco.
+    $editor = editorWith([ball('b1')])->set('selectedId', 'b1');
+
+    expect($editor->get('hasUnsavedChanges'))->toBeFalse();
+});
+
 test('salvar limpa a marca de alteracao pendente', function () {
     $editor = editorWith([])
         ->call('addBall')
