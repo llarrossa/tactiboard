@@ -625,11 +625,21 @@ partir de onde ela está na tela, e não da posição que o desenho ainda carreg
 sem isso o segundo `pointerdown` reabriria exatamente o salto que esta correção
 fecha.
 
-A fila anda uma posição a cada resposta, porque o Livewire serializa as chamadas
-do componente e cada resposta traz para o desenho exatamente um dos
-deslocamentos. Se a chamada for **recusada** — a sessão pode ter mudado com o
-editor aberto —, a fila inteira é descartada: a peça volta para o que está
-gravado, que é a única posição que existe de verdade.
+A fila anda uma posição por **chamada confirmada**, e não por resposta HTTP: o
+Livewire adia as chamadas seguintes enquanto há uma mensagem em voo e as dispara
+na ordem, mas pode agrupar em uma única mensagem as que nascem na mesma janela de
+alguns milissegundos — nesse caso uma resposta resolve mais de uma promessa e
+`landed()` roda mais de uma vez. O que importa é a correspondência: cada
+confirmação retira do visual exatamente o deslocamento que o desenho acabou de
+receber. Se a chamada for **recusada** — a sessão pode ter mudado com o editor
+aberto —, a fila inteira é descartada: a peça volta para o que está gravado, que
+é a única posição que existe de verdade.
+
+A fila não tem teto, e isso é deliberado: com a rede fora do ar, cada arrasto
+acrescenta um item e a peça fica onde o usuário a soltou. Limitar o tamanho
+devolveria o salto justamente na situação em que segurar a posição mais importa,
+e o custo de memória de alguns objetos com dois números é irrelevante perto
+disso.
 
 O arrasto de **ponta de seta** fica de fora dessa espera, como já ficava da
 prévia durante o gesto: o deslocamento de uma ponta aplicado ao grupo moveria a
