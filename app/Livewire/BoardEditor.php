@@ -127,14 +127,31 @@ class BoardEditor extends Component
 
         $element = $this->elements[$index];
 
-        if (($element['type'] ?? null) === CanvasElementType::Arrow->value) {
-            $parts = in_array($part, ['start', 'end'], true) ? [$part] : ['start', 'end'];
+        // Um elemento adulterado que nao seja sequer um array nao tem posicao
+        // para mover. Sair aqui evita quebrar o editor por causa dele.
+        if (! is_array($element)) {
+            return;
+        }
 
-            foreach ($parts as $end) {
-                $element[$end] = CanvasRules::clamp(
-                    (float) ($element[$end]['x'] ?? 0) + $dx,
-                    (float) ($element[$end]['y'] ?? 0) + $dy,
+        if (($element['type'] ?? null) === CanvasElementType::Arrow->value) {
+            if (in_array($part, ['start', 'end'], true)) {
+                $element[$part] = CanvasRules::clamp(
+                    (float) ($element[$part]['x'] ?? 0) + $dx,
+                    (float) ($element[$part]['y'] ?? 0) + $dy,
                 );
+            } else {
+                // Mover a seta inteira limita o proprio deslocamento, e nao
+                // cada ponta em separado: prender as pontas uma a uma faria a
+                // seta encolher ao encostar na borda, mudando a jogada que o
+                // usuario desenhou.
+                [$dx, $dy] = $this->fittedShift($element, $dx, $dy);
+
+                foreach (['start', 'end'] as $end) {
+                    $element[$end] = CanvasRules::clamp(
+                        (float) ($element[$end]['x'] ?? 0) + $dx,
+                        (float) ($element[$end]['y'] ?? 0) + $dy,
+                    );
+                }
             }
         } else {
             $element = [...$element, ...CanvasRules::clamp(
@@ -199,12 +216,19 @@ class BoardEditor extends Component
 
     public function render(): View
     {
+        // Desenha so o que e desenhavel. Um elemento malformado — que so
+        // aparece se a validacao reprovou ou se o payload foi adulterado —
+        // fica de fora do campo, e a mensagem de erro explica o que houve.
+        $drawable = CanvasRules::drawable($this->elements);
+
         return view('livewire.board-editor', [
-            // Desenha so o que e desenhavel. Um elemento malformado — que so
-            // aparece se a validacao reprovou ou se o payload foi adulterado —
-            // fica de fora do campo, e a mensagem de erro explica o que houve.
-            'drawable' => CanvasRules::drawable($this->elements),
-            'selectedIndex' => $this->selectedId === null ? null : $this->indexOf($this->selectedId),
+            'drawable' => $drawable,
+            // O painel abre pelo indice na lista original, que e o caminho que
+            // os campos escrevem — mas so quando o elemento selecionado esta
+            // integro, senao o painel quebraria junto com ele.
+            'selectedIndex' => in_array($this->selectedId, array_column($drawable, 'id'), true)
+                ? $this->indexOf($this->selectedId)
+                : null,
         ]);
     }
 
@@ -214,12 +238,30 @@ class BoardEditor extends Component
     private function indexOf(string $id): ?int
     {
         foreach ($this->elements as $index => $element) {
-            if (($element['id'] ?? null) === $id) {
+            if (is_array($element) && ($element['id'] ?? null) === $id) {
                 return (int) $index;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Recorta o deslocamento de uma seta para que as duas pontas continuem
+     * dentro do campo, preservando comprimento e direcao.
+     *
+     * @param  array<string, mixed>  $arrow
+     * @return array{0: float, 1: float}
+     */
+    private function fittedShift(array $arrow, float $dx, float $dy): array
+    {
+        $xs = [(float) ($arrow['start']['x'] ?? 0), (float) ($arrow['end']['x'] ?? 0)];
+        $ys = [(float) ($arrow['start']['y'] ?? 0), (float) ($arrow['end']['y'] ?? 0)];
+
+        return [
+            max(-min($xs), min($dx, CanvasRules::FIELD_WIDTH - max($xs))),
+            max(-min($ys), min($dy, CanvasRules::FIELD_HEIGHT - max($ys))),
+        ];
     }
 
     /**

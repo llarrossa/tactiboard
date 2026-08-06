@@ -77,6 +77,56 @@ test('uma ponta invalida move a seta inteira em vez de corromper o elemento', fu
         ->and($editor->get('elements')[0]['start'])->toEqual(['x' => 110.0, 'y' => 110.0]);
 });
 
+test('mover a seta inteira contra a borda preserva o comprimento dela', function () {
+    // Prender cada ponta em separado encolheria a seta ao encostar na linha,
+    // mudando a jogada que o usuario desenhou.
+    $editor = editorWith([arrow()])->call('moveElement', 'a1', -150, 0);
+
+    $movida = $editor->get('elements')[0];
+
+    expect($movida['start'])->toEqual(['x' => 0.0, 'y' => 100.0])
+        ->and($movida['end'])->toEqual(['x' => 100.0, 'y' => 200.0]);
+
+    // Mesma coisa na borda oposta.
+    $editor->call('moveElement', 'a1', 99999, 99999);
+
+    $movida = $editor->get('elements')[0];
+
+    expect($movida['end']['x'] - $movida['start']['x'])->toBe(100.0)
+        ->and($movida['end']['y'] - $movida['start']['y'])->toBe(100.0)
+        ->and($movida['end']['x'])->toBe((float) CanvasRules::FIELD_WIDTH)
+        ->and($movida['end']['y'])->toBe((float) CanvasRules::FIELD_HEIGHT);
+});
+
+test('arrastar uma ponta sozinha continua podendo mudar o comprimento', function () {
+    $editor = editorWith([arrow()])->call('moveElement', 'a1', -500, 0, 'start');
+
+    expect($editor->get('elements')[0]['start'])->toEqual(['x' => 0.0, 'y' => 100.0])
+        ->and($editor->get('elements')[0]['end'])->toEqual(['x' => 200.0, 'y' => 200.0]);
+});
+
+test('um elemento adulterado que nao e array nao derruba o editor', function () {
+    $editor = editorWith([ball('b1'), ball('b2')]);
+
+    $editor->set('elements', [ball('b1'), 'quebrado'])
+        ->call('moveElement', 'b1', 10, 10)
+        ->assertOk();
+
+    expect($editor->get('elements')[0])->toMatchArray(['x' => 510.0, 'y' => 310.0]);
+});
+
+test('o painel some quando o elemento selecionado fica malformado', function () {
+    $editor = editorWith([
+        ['id' => 'p1', 'type' => 'player', 'team' => 'home', 'number' => 9, 'x' => 200, 'y' => 350],
+    ])->call('select', 'p1')->assertSee(__('Selected element'));
+
+    // O painel le o elemento cru para escrever nele; se ele estiver quebrado,
+    // abrir o painel quebraria o render inteiro.
+    $editor->set('elements.0.type', 'foguete')
+        ->assertOk()
+        ->assertDontSee(__('Selected element'));
+});
+
 test('mover um elemento que ja nao existe nao quebra o editor', function () {
     $editor = editorWith([ball()])->call('moveElement', 'fantasma', 10, 10)->assertOk();
 
