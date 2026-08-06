@@ -176,6 +176,26 @@ class BoardEditor extends Component
     }
 
     /**
+     * Esvazia o campo.
+     *
+     * Nao grava sozinho: como toda edicao do editor, a mudanca so vira
+     * canvas_data quando o usuario salva. Recarregar a pagina antes disso
+     * traz a jogada de volta, o que e o caminho de arrependimento mais
+     * simples enquanto nao existe desfazer.
+     */
+    public function clearCanvas(): void
+    {
+        $this->authorize('update', $this->board);
+
+        $this->elements = [];
+        $this->selectedId = null;
+
+        // Um erro sobre um elemento que acabou de sair do campo nao descreve
+        // mais nada que o usuario possa corrigir.
+        $this->resetErrorBag();
+    }
+
+    /**
      * Cria uma copia do elemento, deslocada para nao esconder o original.
      *
      * A selecao passa para a copia: duplicar de novo empilha a jogada em

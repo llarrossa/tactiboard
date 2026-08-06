@@ -6,7 +6,7 @@
      x-on:pointercancel.window="cancelDrag()">
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <x-editor-toolbar />
+        <x-editor-toolbar :count="count($elements)" />
 
         <div class="flex items-center gap-3">
             <span class="text-sm" role="status" aria-live="polite">
@@ -52,4 +52,26 @@
     @if ($selectedIndex !== null)
         <x-element-properties :element="$elements[$selectedIndex]" :index="$selectedIndex" />
     @endif
+
+    <x-modal name="confirm-clear-canvas" focusable maxWidth="md">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900">
+                {{ __('Clear the whole field?') }}
+            </h2>
+
+            <p class="mt-1 text-sm text-gray-600">
+                {{ __('Every element leaves the field. Nothing is saved until you save the board.') }}
+            </p>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <x-secondary-button x-on:click="$dispatch('close')">
+                    {{ __('Cancel') }}
+                </x-secondary-button>
+
+                <x-danger-button wire:click="clearCanvas" x-on:click="$dispatch('close')">
+                    {{ __('Clear field') }}
+                </x-danger-button>
+            </div>
+        </div>
+    </x-modal>
 </div>
