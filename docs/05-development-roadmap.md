@@ -649,6 +649,8 @@ nulo; o comportamento foi confirmado no navegador. O código está correto.
 
 # 9. Fase 6 — Qualidade e Profissionalização
 
+**Status: em andamento, iniciada em 2026-08-06.**
+
 ## Objetivo
 
 Preparar o projeto para ambiente real.
@@ -661,8 +663,8 @@ Preparar o projeto para ambiente real.
 
 Aumentar cobertura:
 
-- Feature tests.
-- Unit tests.
+- [ ] Feature tests.
+- [ ] Unit tests.
 
 ---
 
@@ -670,10 +672,10 @@ Aumentar cobertura:
 
 Revisar:
 
-- Organização.
-- Duplicações.
-- Performance.
-- Padrões.
+- [ ] Organização.
+- [ ] Duplicações.
+- [ ] Performance.
+- [ ] Padrões.
 
 ---
 
@@ -681,9 +683,34 @@ Revisar:
 
 Criar:
 
-- README.
-- Guia de instalação.
-- Documentação de funcionalidades.
+- [ ] README.
+- [ ] Guia de instalação.
+- [ ] Documentação de funcionalidades.
+
+---
+
+## Critérios de conclusão
+
+Definidos na abertura da fase (2026-08-06). Todas as outras fases têm critérios
+verificáveis, e §2 deste documento exige que tenham; "preparar o projeto para
+ambiente real" descreve a intenção, mas não diz o que se confere ao fechar.
+
+- [ ] Suíte verde e cobertura de linhas **igual ou superior a 97%**, medida por
+      `sail pest --coverage`. A fase abriu em 96,0%.
+- [ ] Laravel Pint sem violações.
+- [ ] README descrevendo o produto que existe hoje, e não uma fase anterior.
+- [ ] Guia de instalação conferido passo a passo, e não apenas escrito.
+- [ ] Documentação de funcionalidades publicada, cobrindo RF-001 a RF-015 e as
+      limitações conhecidas.
+- [ ] Auditoria com Codex realizada, sem apontamento em aberto — cada um
+      corrigido, ou recusado com justificativa registrada.
+
+Os 4% que faltam para a meta de cobertura têm nome e endereço: o bloqueio por
+tentativas do login, dois enums do domínio sem teste unitário e as guardas
+defensivas do editor. É justamente o código que ninguém exercita à mão. O que
+ficar de fora precisa estar registrado como decisão, e não passar por
+esquecimento — é o caso da verificação de e-mail, instalada e inativa desde a
+Fase 1.
 
 ---
 
