@@ -20,6 +20,8 @@
                 <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board updated.') }}</div>
             @elseif (session('status') === 'board-shared')
                 <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board shared.') }}</div>
+            @elseif (session('status') === 'board-link-rotated')
+                <div class="mb-4 text-sm font-medium text-green-600">{{ __('New link generated. The previous one no longer opens.') }}</div>
             @elseif (session('status') === 'board-unshared')
                 <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board is private again.') }}</div>
             @endif

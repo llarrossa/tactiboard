@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\GenerateSharedLinkAction;
 use App\Actions\RevokeSharedLinkAction;
+use App\Actions\RotateSharedLinkAction;
 use App\Models\Board;
 use Illuminate\Http\RedirectResponse;
 
@@ -18,6 +19,7 @@ class SharedLinkController extends Controller
     public function __construct(
         private readonly GenerateSharedLinkAction $generateSharedLinkAction,
         private readonly RevokeSharedLinkAction $revokeSharedLinkAction,
+        private readonly RotateSharedLinkAction $rotateSharedLinkAction,
     ) {}
 
     public function store(Board $board): RedirectResponse
@@ -27,6 +29,18 @@ class SharedLinkController extends Controller
         return redirect()
             ->route('boards.show', $board)
             ->with('status', 'board-shared');
+    }
+
+    /**
+     * Aposenta o endereco atual e devolve outro (docs/03 §7.1).
+     */
+    public function update(Board $board): RedirectResponse
+    {
+        $this->rotateSharedLinkAction->execute($board);
+
+        return redirect()
+            ->route('boards.show', $board)
+            ->with('status', 'board-link-rotated');
     }
 
     public function destroy(Board $board): RedirectResponse
