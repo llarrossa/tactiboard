@@ -70,6 +70,18 @@ window.tactiboardCanvasDrag = () => ({
         };
     },
 
+    /*
+     * O navegador pode tomar o ponteiro de volta no meio do gesto — o dedo sai
+     * da tela, o sistema assume a rolagem, a janela perde o foco. Sem tratar o
+     * cancelamento, o arrasto ficaria preso e todo movimento seguinte
+     * continuaria deslocando o elemento.
+     */
+    cancelDrag() {
+        this.draggingId = null;
+        this.draggingPart = null;
+        this.delta = { x: 0, y: 0 };
+    },
+
     endDrag() {
         if (this.draggingId === null) {
             return;

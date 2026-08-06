@@ -2,7 +2,8 @@
      x-data="{ saved: false, ...tactiboardCanvasDrag() }"
      x-on:canvas-saved.window="saved = true; setTimeout(() => saved = false, 2500)"
      x-on:pointermove.window="onMove($event)"
-     x-on:pointerup.window="endDrag()">
+     x-on:pointerup.window="endDrag()"
+     x-on:pointercancel.window="cancelDrag()">
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <x-editor-toolbar />
