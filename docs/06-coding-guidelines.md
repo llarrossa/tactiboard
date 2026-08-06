@@ -166,7 +166,6 @@ Exemplos:
 
 - CreateBoardRequest
 - UpdateBoardRequest
-- UpdateCanvasRequest
 
 Benefícios:
 

@@ -126,9 +126,10 @@ public function store(CreateBoardRequest $request)
 }
 ```
 
-**Form Requests** — obrigatórios para toda validação de entrada. Nunca validar
-dentro do Controller. Ex.: `CreateBoardRequest`, `UpdateBoardRequest`,
-`UpdateCanvasRequest`.
+**Form Requests** — obrigatórios para toda validação que chega por HTTP. Nunca
+validar dentro do Controller. Ex.: `CreateBoardRequest`, `UpdateBoardRequest`.
+A única exceção é o canvas, que é salvo pelo Livewire e valida por
+`App\Rules\CanvasRules` (`docs/04` §8.3).
 
 **Actions** — uma operação específica e completa, com responsabilidade clara e
 fácil de testar. Nome no domínio do produto: `CreateBoardAction`,
@@ -192,16 +193,18 @@ evoluir o editor sem migrations.
 ```json
 {
   "elements": [
-    { "type": "player", "team": "home", "number": 9, "x": 200, "y": 350 },
-    { "type": "arrow", "start": {"x": 200, "y": 350}, "end": {"x": 300, "y": 250} },
-    { "type": "text", "content": "Atacar profundidade", "x": 400, "y": 200 }
+    { "id": "k3Ba9xQ2mZ", "type": "player", "team": "home", "number": 9, "x": 200, "y": 350 },
+    { "id": "a1Qw6nJb8S", "type": "arrow", "start": {"x": 200, "y": 350}, "end": {"x": 300, "y": 250} },
+    { "id": "t9Zx4mKp1A", "type": "text", "content": "Atacar profundidade", "x": 400, "y": 200 }
   ]
 }
 ```
 
-Regras do JSON: manter a estrutura documentada em `docs/03`, evitar dados
-redundantes e **não** guardar ali informação que deveria ser entidade própria.
-Validar a estrutura ao salvar (`UpdateCanvasRequest`).
+Regras do JSON: manter a estrutura documentada em `docs/03` §6.1 — que é a
+referência oficial do formato —, evitar dados redundantes e **não** guardar ali
+informação que deveria ser entidade própria. **Todo elemento tem `id`**, desde a
+Fase 3. A validação acontece em `App\Rules\CanvasRules`, e não em Form Request:
+o canvas é salvo pelo Livewire, exceção registrada em `docs/04` §8.3.
 
 ---
 
@@ -326,7 +329,7 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-06):** **Fases 0, 1, 2, 3 e 4 concluídas.** A aplicação
+**Estado atual (2026-08-06):** **Fases 0 a 5 concluídas.** A aplicação
 Laravel 12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está
 conectado e o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
 
@@ -335,12 +338,39 @@ dashboard e perfil. A Fase 2 entregou o núcleo do produto: tabela `boards`, mod
 `Board`, CRUD completo e `BoardPolicy` aplicando a RN-001. A Fase 3 entregou o
 editor tático: campo em SVG, os seis elementos, arrastar/selecionar/remover e a
 persistência do canvas. A Fase 4 entregou o compartilhamento: tabela
-`shared_links`, link público e visualização sem cadastro. Tudo em português. A
-suíte tem **169 testes / 562 asserções**, todos passando, e o Pint está limpo.
+`shared_links`, link público e visualização sem cadastro. A Fase 5 tornou o
+editor confortável: duplicar, limpar campo, atalhos de teclado, toolbar agrupada,
+responsividade, aviso de alteração pendente e o botão de gerar link novo. Tudo em
+português. A suíte tem **228 testes / 686 asserções**, todos passando, e o Pint
+está limpo.
 
-Com a Fase 4 os critérios de aceitação do MVP (`docs/02` §11) estão **todos
-atendidos**. Próximo passo: **Fase 5** (UX do editor — toolbar, atalhos,
-duplicar, limpar campo, responsividade).
+Os critérios de aceitação do MVP (`docs/02` §11) estão **todos atendidos** desde
+a Fase 4. Próximo passo: **Fase 6** (qualidade — cobertura de testes, revisão
+geral, README e documentação de instalação).
+
+Pontos da Fase 5 que valem lembrar:
+- **`touch-action: none` vive na peça, não no campo.** Desligado no campo
+  inteiro, o dedo sobre a grama não rola a página e a prancheta prende a tela no
+  celular. Não voltar a pôr `touch-none` no `<x-field>`.
+- **O campo tem `max-h-[70vh]` *e* `max-w-[105vh]`.** As duas andam juntas: só a
+  altura deixaria faixas vazias dos dois lados do gramado. 105 = 70 × 1,5, a
+  proporção do `viewBox`.
+- **Os atalhos não podem inventar função.** Cada um aciona algo que a interface
+  já oferece por botão, e nenhum dispara com o foco em campo de formulário ou
+  com um modal aberto — a guarda usa a classe que o `x-modal` põe no `<body>`.
+- **O foco em um elemento do canvas não seleciona.** `Tab` alcança, `Enter` ou
+  espaço seleciona. Selecionar no foco custaria uma requisição por peça
+  percorrida.
+- **`hasUnsavedChanges` é marca, não comparação.** Comparar com o banco acusaria
+  mudança em elemento parado, porque o `clamp` devolve float onde o registro
+  gravado pode ter inteiro. Toda escrita no canvas marca; `save()` limpa.
+- **`updated()` também escuta `elements` inteiro**, não só `elements.*`: o
+  navegador pode substituir a lista de uma vez.
+- **Gerar link novo não mexe em `visibility`.** Ele troca o token; quem controla
+  o estado público continua sendo `boards.visibility`. `SharedLink::newToken()`
+  é o ponto único do formato do token.
+- **Limitação conhecida:** não existe desfazer. Limpar campo e remover elemento
+  só se recuperam recarregando a página antes de salvar.
 
 Pontos da Fase 4 que valem lembrar:
 - **`/share/{token}` é a única rota anônima do produto.** Fica fora de qualquer
@@ -356,8 +386,8 @@ Pontos da Fase 4 que valem lembrar:
   `:interactive="false"` (as funções de arrasto só existem no `BoardEditor`) e
   `CanvasRules::drawable()` antes de desenhar — sem ele, um `canvas_data` editado
   à mão serve 500 a um visitante.
-- **Limitação conhecida:** um link vazado continua o mesmo ao recompartilhar. Um
-  botão "gerar novo link" é candidato à Fase 5.
+- A limitação de o link vazado continuar o mesmo ao recompartilhar foi
+  **resolvida na Fase 5**, com `RotateSharedLinkAction`.
 
 Pontos da Fase 3 que valem lembrar:
 - **Livewire 4.3.5**, com componentes de **classe** (`make:livewire --class`) em
@@ -409,7 +439,7 @@ Pontos das fases anteriores que valem lembrar:
 | **2** ✅ | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | **Concluída** — usuário gerencia as próprias pranchetas |
 | **3** ✅ | Editor tático: campo, elementos, manipulação, persistência JSON | **Concluída** — usuário cria jogada, salva, reabre mantendo o estado |
 | **4** ✅ | Compartilhamento: `shared_links`, link público, visualização | **Concluída** — pessoa sem conta acessa a análise pelo link, sem editar |
-| **5** | UX: toolbar, atalhos, duplicar, limpar campo, responsividade | Editor confortável para uso real |
+| **5** ✅ | UX: toolbar, atalhos, duplicar, limpar campo, responsividade | **Concluída** — editor confortável para uso real |
 | **6** | Qualidade: cobertura de testes, revisão, README e docs | Projeto pronto para ambiente real |
 | **7** | Futuro (fora do MVP): biblioteca, animações, colaboração, vídeos, IA | — |
 
@@ -545,6 +575,20 @@ Decisões confirmadas na Fase 4:
 | Token | **`Str::random(32)`**, coluna `varchar(64)` única | ~190 bits de entropia; o índice único transforma colisão em erro, não em vazamento |
 | Layout público | **`layouts/public.blade.php` próprio**, sem Livewire | O `guest` é o cartão estreito das telas de auth. A página pública é estática |
 | Policy | **`share()` própria**, não reuso de `update()` | RN-001 lista gerar links entre os poderes do dono; nomear deixa a regra visível no `route:list` |
+
+Decisões confirmadas na Fase 5:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Modelos pré-configurados | **Adiados para a Fase 7** | Sobrepõem-se à Biblioteca de Jogadas e ampliariam o produto em vez de melhorar o editor existente |
+| Duplicar jogador | **A cópia recebe o próximo número livre** | Dois jogadores do mesmo lado com o mesmo número seriam a mesma peça duas vezes no campo |
+| Limpar campo | **Não grava; pede confirmação** | Como toda edição do editor, só vira `canvas_data` ao salvar. Recarregar a página é o caminho de arrependimento enquanto não existe desfazer |
+| Atalhos | **Só acionam o que já existe em botão** | Atalho que esconde função deixa o editor dependente de memória |
+| Foco no canvas | **`Tab` alcança, `Enter`/espaço seleciona** | Selecionar no foco custaria uma requisição por peça percorrida |
+| Duplicar/remover na toolbar | **Não** — ficam no painel de propriedades | São ações sobre o elemento selecionado; repeti-las daria dois caminhos para a mesma coisa |
+| Alteração pendente | **Marca posta por quem escreve**, não comparação com o banco | O `clamp` devolve float onde o gravado pode ter inteiro, e a comparação acusaria mudança em elemento parado |
+| Gerar link novo | **Troca o token sem tocar em `visibility`** | Os dois mecanismos seguem separados (`docs/03` §6.2): muda *por onde* o acesso acontece, não *se* ele pode acontecer |
+| Toque no celular | **`touch-action: none` na peça, não no campo** | No campo inteiro, o dedo sobre a grama não rolava a página |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).

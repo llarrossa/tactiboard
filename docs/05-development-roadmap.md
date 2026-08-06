@@ -486,10 +486,10 @@ atendidos.
 
 ### Limitações conhecidas
 
-1. Como compartilhar reaproveita o token, **um link que vaze continua o mesmo ao
-   recompartilhar**. Tornar a prancheta privada derruba o acesso enquanto ela
-   estiver privada, mas não aposenta o token. Um botão "gerar novo link" resolve
-   e é candidato à Fase 5 — não entrou aqui porque RF-014 não pede.
+1. ~~Como compartilhar reaproveita o token, **um link que vaze continua o mesmo
+   ao recompartilhar**.~~ **Resolvido na Fase 5** (2026-08-06) por
+   `RotateSharedLinkAction`: o dono gera um endereço novo e o anterior deixa de
+   abrir na hora. Não entrou na Fase 4 porque RF-014 não pede.
 2. **A serialização de dois compartilhamentos simultâneos não tem teste de
    regressão.** `GenerateSharedLinkAction` trava a linha da prancheta com
    `lockForUpdate()`, mas provar isso exigiria um teste com requisições
@@ -525,26 +525,101 @@ gravação falhar fechada — que é o comportamento correto.
 
 # 8. Fase 5 — Melhorias de Experiência
 
+**Status: concluída em 2026-08-06.**
+
 ## Objetivo
 
 Melhorar usabilidade do produto.
 
 ---
 
-## Funcionalidades possíveis
+## Funcionalidades
 
-- Melhorar toolbar.
-- Atalhos de teclado.
-- Duplicar elementos.
-- Limpar campo.
-- Modelos pré-configurados.
-- Melhorar responsividade.
+- [x] Melhorar toolbar.
+- [x] Atalhos de teclado.
+- [x] Duplicar elementos.
+- [x] Limpar campo.
+- [x] Melhorar responsividade.
+- [x] Aviso de alterações não salvas.
+- [x] Gerar novo link público.
+- [ ] ~~Modelos pré-configurados~~ — movidos para a Fase 7.
 
 ---
 
 ## Critério
 
-O editor deve ser confortável para uso real.
+- [x] O editor deve ser confortável para uso real.
+
+---
+
+## Resultado
+
+| Item | Estado |
+|---|---|
+| Editor | Duplicar elemento, limpar campo, atalhos de teclado e aviso de alteração pendente |
+| Acessibilidade | Elementos do campo alcançáveis por `Tab`, selecionáveis por `Enter`/espaço e anunciados com rótulo próprio |
+| Toolbar | Grupos rotulados, contador `n/100` e botões desabilitados ao atingir o limite |
+| Responsividade | Toque desligado na peça e não no campo; campo limitado a 70vh; painel de propriedades empilhado no celular |
+| Compartilhamento | `RotateSharedLinkAction` e `boards.share.update`, com `SharedLink::newToken()` centralizando o formato |
+| Camadas | Nenhuma camada nova; nenhuma dependência nova; nenhuma migration |
+| Testes | 228 testes, 686 asserções, todos passando |
+| Formatação | Laravel Pint sem violações |
+
+### Decisões desta fase
+
+1. **Modelos pré-configurados saem da fase.** Eles se sobrepõem à Biblioteca de
+   Jogadas da Fase 7 (salvar modelos, reutilizar análises) e ampliariam o
+   produto em vez de melhorar o editor existente. Decisão do responsável pelo
+   projeto, tomada na abertura da fase.
+2. **Duplicar dá um número novo ao jogador.** Dois jogadores do mesmo lado com o
+   mesmo número seriam a mesma peça duas vezes no campo. A cópia também nasce
+   deslocada, e junto da borda o deslocamento inverte — preso pelo limite do
+   campo, ela pararia exatamente sobre o original.
+3. **Limpar campo não grava.** Como toda edição do editor, só vira `canvas_data`
+   ao salvar. Recarregar a página traz a jogada de volta, que é o caminho de
+   arrependimento enquanto não existe desfazer.
+4. **Atalhos não inventam função.** Cada um deles aciona algo que a interface já
+   oferece por botão. Eles não disparam com o foco em campo de formulário nem
+   com um modal aberto.
+5. **O foco não seleciona.** Percorrer o campo com `Tab` custaria uma ida ao
+   servidor por peça; a seleção é explícita, por `Enter` ou espaço.
+6. **Duplicar e remover ficam só no painel de propriedades.** São ações sobre o
+   elemento selecionado; repeti-las na toolbar daria dois caminhos para a mesma
+   coisa sem informação nova.
+7. **A marca de alteração pendente é posta por quem escreve**, e não calculada
+   comparando com o banco: o `clamp` devolve float onde o registro gravado pode
+   ter inteiro, e a comparação acusaria mudança em elemento parado.
+8. **Gerar novo link não mexe na visibilidade.** Os dois mecanismos seguem
+   separados (`docs/03` §6.2): a operação muda *por onde* o acesso acontece, não
+   *se* ele pode acontecer.
+
+### Aprendizados
+
+- **`touch-action` pertence à peça, não ao campo.** Desligado no campo inteiro,
+  como estava desde a Fase 3, o dedo sobre a grama não rolava a página — no
+  celular a prancheta prendia a tela. Na peça, arrastar move e a grama rola.
+- **Limitar só a altura do SVG deixa faixas vazias.** O elemento mantinha a
+  largura inteira quando a altura era limitada. A largura máxima precisa
+  acompanhar a altura na proporção do `viewBox`.
+- **`updated()` não vê só os caminhos aninhados.** O navegador pode substituir
+  `elements` inteiro de uma vez, e essa também é uma edição por gravar. A
+  condição que olhava apenas `elements.` deixava passar exatamente o caso em que
+  o trabalho corre risco.
+- **Comparar posições exige normalizar o tipo.** `1050 === 1050.0` é falso em
+  PHP, e a comparação estrita dizia que um elemento parado tinha se movido.
+
+### Limitações conhecidas
+
+1. **Não existe desfazer.** Limpar campo e remover elemento se recuperam
+   recarregando a página antes de salvar, e nada mais. Um histórico de edição é
+   assunto de fase futura.
+2. **Os atalhos não têm teste automatizado.** Eles vivem no Alpine, e a suíte
+   cobre o que a página entrega (as ligações, o foco e os rótulos) mais os
+   métodos que eles chamam. O comportamento de ponta a ponta foi verificado no
+   navegador.
+3. **Mover pelo teclado custa uma requisição por tecla.** Aceitável no uso real,
+   já que o Livewire agrupa chamadas próximas; se incomodar, o acúmulo local com
+   envio ao soltar a tecla resolve.
 
 ---
 

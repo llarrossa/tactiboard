@@ -491,6 +491,18 @@ deixa visível no `route:list`.
 futebol. O layout público não declara `@livewireScripts`: a página é estática, e
 carregar o Livewire ali só aumentaria o peso de uma tela que ninguém edita.
 
+### Gerar um link novo
+
+Acrescentado na Fase 5 (2026-08-06). `RotateSharedLinkAction` troca o token do
+link existente, e `SharedLink::newToken()` passa a concentrar o formato definido
+em `docs/03` §7.1 — antes ele vivia dentro de `GenerateSharedLinkAction`, e
+duas Actions precisam dele.
+
+A operação **não toca em `visibility`**: os dois mecanismos seguem separados
+(`docs/03` §6.2). Ela muda *por onde* o acesso acontece, não *se* ele pode
+acontecer. Isso fecha a limitação registrada na Fase 4 — compartilhar de novo
+reaproveita o token, então um link que vazasse continuava valendo.
+
 ### O canvas precisa de dois cuidados fora do editor
 
 1. **`<x-canvas.element>` ganhou a prop `interactive`** (default `true`). O grupo
@@ -507,6 +519,72 @@ carregar o Livewire ali só aumentaria o peso de uma tela que ninguém edita.
 
 ---
 
+## 8.5 Interação por teclado e toque
+
+Decisão registrada na Fase 5 (2026-08-06).
+
+### Os atalhos vivem no Alpine
+
+`window.tactiboardEditorShortcuts()` fica em `resources/js/app.js`, ao lado de
+`tactiboardCanvasDrag()` e pelo mesmo motivo de §8.2: é interação local, e o
+bundle do Vite executa antes de o Livewire iniciar o Alpine, o que tornaria um
+`Alpine.data()` dependente de ordem.
+
+Cada atalho chama um método que a interface já expõe por botão — `save`,
+`duplicateElement`, `removeElement`, `select` e `moveElement`. Nenhum deles
+oferece função exclusiva do teclado: um atalho que esconde comportamento deixa o
+editor dependente de memória.
+
+Duas guardas impedem que um atalho dispare fora de hora:
+
+| Situação | Como é detectada |
+|---|---|
+| O usuário está digitando | `event.target` é `INPUT`, `SELECT`, `TEXTAREA` ou `contenteditable` |
+| Um modal está aberto | A classe `overflow-y-hidden` que o `x-modal` põe no `<body>` |
+
+A segunda é acoplamento deliberado com o componente `x-modal`: é o único sinal
+que ele publica. Sem ela, um `Delete` atrás da confirmação apagaria um elemento
+que o usuário não está vendo.
+
+### O foco não seleciona
+
+Cada elemento do canvas é um `<g>` com `tabindex="0"`, `role="button"` e
+`aria-label` próprio — o rótulo diz qual peça é, porque quem navega por teclado
+ou leitor de tela não vê a cor nem a posição. `Enter` e espaço selecionam.
+
+Selecionar no `focus` seria mais direto, mas custaria uma ida ao servidor por
+peça percorrida: com vinte elementos em campo, atravessar o canvas com `Tab`
+dispararia vinte requisições.
+
+### O toque é desligado na peça, não no campo
+
+`touch-action: none` vive no `<g>` de cada elemento. Na Fase 3 ele estava no
+campo inteiro, via `touch-none`, e a consequência só aparece no celular: o dedo
+sobre a grama não rolava a página, e a prancheta prendia a tela.
+
+Na peça, o comportamento é o correto dos dois lados — arrastar um jogador move a
+peça, e o dedo sobre o gramado rola a página.
+
+### O campo tem limite de altura e de largura
+
+`max-h-[70vh]` mantém a toolbar e o botão de salvar visíveis junto com o campo
+numa tela baixa. `max-w-[105vh]` acompanha: sem ela, o elemento manteria a
+largura inteira quando a altura fosse limitada, e sobrariam faixas vazias dos
+dois lados do gramado. O 105 é 70 × 1,5, a proporção do `viewBox`.
+
+### Alteração pendente é marca, não comparação
+
+`BoardEditor::$hasUnsavedChanges` é posta por quem altera o canvas e limpa em
+`save()`. Comparar `$elements` com o que está no banco seria mais elegante e
+está errado: `CanvasRules::clamp()` devolve float onde o registro gravado pode
+ter inteiro, e a comparação acusaria mudança em elemento parado.
+
+O `updated()` marca tanto os caminhos aninhados (`elements.0.number`) quanto a
+escrita na lista inteira (`elements`) — o navegador pode substituir a
+propriedade de uma vez, e essa também é uma edição por gravar.
+
+---
+
 # 9. Persistência do Canvas
 
 O conteúdo visual da prancheta será armazenado em JSON.
@@ -517,14 +595,21 @@ Exemplo:
 {
     "elements": [
         {
+            "id": "k3Ba9xQ2mZ",
             "type": "player",
             "x": 100,
             "y": 200,
-            "team": "home"
+            "team": "home",
+            "number": 9
         }
     ]
 }
 ```
+
+O schema completo — os cinco tipos, os campos de cada um e os limites — e
+definido em `03-database-design.md` §6.1, que e a referencia oficial do formato
+persistido. Todo elemento carrega um `id` proprio desde a Fase 3: nenhuma
+operacao pode depender da posicao na lista.
 
 ---
 
