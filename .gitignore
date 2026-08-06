@@ -24,3 +24,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Artefatos de verificacao no navegador (Playwright MCP)
+/.playwright-mcp
