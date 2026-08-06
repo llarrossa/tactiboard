@@ -29,6 +29,11 @@ class BoardEditor extends Component
      */
     public array $elements = [];
 
+    /**
+     * Elemento selecionado, pelo id. O painel de propriedades acompanha ele.
+     */
+    public ?string $selectedId = null;
+
     public function mount(Board $board): void
     {
         // A rota que renderiza o editor ja passa pela BoardPolicy, mas o
@@ -93,6 +98,85 @@ class BoardEditor extends Component
         ]);
     }
 
+    /**
+     * Marca o elemento em que o usuario clicou. Passar null limpa a selecao.
+     */
+    public function select(?string $id): void
+    {
+        $this->selectedId = $id !== null && $this->indexOf($id) !== null ? $id : null;
+    }
+
+    /**
+     * Move um elemento pelo deslocamento vindo do arrasto.
+     *
+     * Recebe delta, e nao posicao absoluta: o cliente diz o quanto arrastou e
+     * o servidor, que ja sabe onde o elemento estava, decide onde ele para.
+     *
+     * @param  string|null  $part  `start` ou `end` para arrastar uma ponta de
+     *                             seta; null move o elemento inteiro.
+     */
+    public function moveElement(string $id, float $dx, float $dy, ?string $part = null): void
+    {
+        $this->authorize('update', $this->board);
+
+        $index = $this->indexOf($id);
+
+        if ($index === null) {
+            return;
+        }
+
+        $element = $this->elements[$index];
+
+        if (($element['type'] ?? null) === CanvasElementType::Arrow->value) {
+            $parts = in_array($part, ['start', 'end'], true) ? [$part] : ['start', 'end'];
+
+            foreach ($parts as $end) {
+                $element[$end] = CanvasRules::clamp(
+                    (float) ($element[$end]['x'] ?? 0) + $dx,
+                    (float) ($element[$end]['y'] ?? 0) + $dy,
+                );
+            }
+        } else {
+            $element = [...$element, ...CanvasRules::clamp(
+                (float) ($element['x'] ?? 0) + $dx,
+                (float) ($element['y'] ?? 0) + $dy,
+            )];
+        }
+
+        $this->elements[$index] = $element;
+        $this->selectedId = $id;
+    }
+
+    public function removeElement(string $id): void
+    {
+        $this->authorize('update', $this->board);
+
+        $index = $this->indexOf($id);
+
+        if ($index === null) {
+            return;
+        }
+
+        unset($this->elements[$index]);
+
+        $this->elements = array_values($this->elements);
+
+        if ($this->selectedId === $id) {
+            $this->selectedId = null;
+        }
+    }
+
+    /**
+     * Valida a propriedade recem-editada no painel, para que o usuario veja o
+     * problema na hora em vez de descobrir so ao salvar.
+     */
+    public function updated(string $property): void
+    {
+        if (str_starts_with($property, 'elements.')) {
+            $this->validateOnly($property, CanvasRules::rules(), CanvasRules::messages());
+        }
+    }
+
     public function save(UpdateBoardCanvasAction $action): void
     {
         $this->authorize('update', $this->board);
@@ -120,7 +204,22 @@ class BoardEditor extends Component
             // aparece se a validacao reprovou ou se o payload foi adulterado —
             // fica de fora do campo, e a mensagem de erro explica o que houve.
             'drawable' => CanvasRules::drawable($this->elements),
+            'selectedIndex' => $this->selectedId === null ? null : $this->indexOf($this->selectedId),
         ]);
+    }
+
+    /**
+     * Posicao do elemento na lista, ou null se ele nao existe mais.
+     */
+    private function indexOf(string $id): ?int
+    {
+        foreach ($this->elements as $index => $element) {
+            if (($element['id'] ?? null) === $id) {
+                return (int) $index;
+            }
+        }
+
+        return null;
     }
 
     /**

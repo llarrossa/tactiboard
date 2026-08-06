@@ -1,4 +1,4 @@
-@props(['element'])
+@props(['element', 'selected' => false])
 
 {{-- O contorno escuro (paint-order: stroke) mantem a observacao legivel sobre
      qualquer parte do gramado, inclusive por cima das linhas brancas. --}}

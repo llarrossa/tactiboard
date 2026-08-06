@@ -1,4 +1,4 @@
-@props(['element'])
+@props(['element', 'selected' => false])
 
 @php
     $x = $element['x'];

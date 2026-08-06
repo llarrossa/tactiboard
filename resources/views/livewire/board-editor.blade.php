@@ -1,6 +1,8 @@
 <div class="bg-white shadow-sm sm:rounded-lg p-4 sm:p-6"
-     x-data="{ saved: false }"
-     @canvas-saved.window="saved = true; setTimeout(() => saved = false, 2500)">
+     x-data="{ saved: false, ...tactiboardCanvasDrag() }"
+     x-on:canvas-saved.window="saved = true; setTimeout(() => saved = false, 2500)"
+     x-on:pointermove.window="onMove($event)"
+     x-on:pointerup.window="endDrag()">
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <x-editor-toolbar />
@@ -37,9 +39,16 @@
         <p class="mb-4 text-sm text-red-600">{{ $errors->first() }}</p>
     @endif
 
-    <x-field>
+    {{-- `touch-none` desliga o gesto de rolagem sobre o campo: sem isso, no
+         celular arrastar um jogador rola a pagina em vez de mover a peca. --}}
+    <x-field x-ref="field" class="touch-none"
+             x-on:pointerdown.self="$wire.select(null)">
         @foreach ($drawable as $element)
-            <x-canvas.element :element="$element" />
+            <x-canvas.element :element="$element" :selected="$selectedId === $element['id']" />
         @endforeach
     </x-field>
+
+    @if ($selectedIndex !== null)
+        <x-element-properties :element="$elements[$selectedIndex]" :index="$selectedIndex" />
+    @endif
 </div>

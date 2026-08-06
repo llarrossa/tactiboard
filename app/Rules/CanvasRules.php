@@ -103,6 +103,22 @@ class CanvasRules
     }
 
     /**
+     * Prende um ponto dentro do campo.
+     *
+     * Arrastar um elemento para fora da linha lateral nao deve virar erro de
+     * validacao: o elemento simplesmente para na borda.
+     *
+     * @return array{x: float, y: float}
+     */
+    public static function clamp(float $x, float $y): array
+    {
+        return [
+            'x' => self::round(max(0, min($x, self::FIELD_WIDTH))),
+            'y' => self::round(max(0, min($y, self::FIELD_HEIGHT))),
+        ];
+    }
+
+    /**
      * Filtra os elementos que podem ser desenhados com seguranca.
      *
      * `elements` e propriedade publica do componente Livewire, entao o

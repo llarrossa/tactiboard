@@ -1,4 +1,4 @@
-@props(['element'])
+@props(['element', 'selected' => false])
 
 @php
     $isHome = $element['team'] === App\Enums\PlayerTeam::Home->value;
