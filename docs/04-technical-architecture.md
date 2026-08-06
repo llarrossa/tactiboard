@@ -618,14 +618,22 @@ o `x`/`y` gravado, ou seja, a peça saltava para a posição anterior e só depo
 pulava para onde tinha sido solta.
 
 A correção mantém o deslocamento aplicado até a chamada responder:
-`tactiboardCanvasDrag()` guarda em `settling`, por id, o deslocamento já enviado,
-e `offsetFor()` usa esse valor quando o elemento não está mais sendo arrastado.
-A entrada é apagada tanto no sucesso quanto na falha — se a chamada for recusada,
-prender a peça em um lugar que o servidor não tem seria pior do que devolvê-la ao
-que está gravado.
+`tactiboardCanvasDrag()` guarda em `settling`, por id, uma **fila** dos
+deslocamentos já enviados, e `offsetFor()` soma o que está na fila com o gesto em
+curso. Somar importa: agarrar a mesma peça de novo antes da resposta precisa
+partir de onde ela está na tela, e não da posição que o desenho ainda carrega —
+sem isso o segundo `pointerdown` reabriria exatamente o salto que esta correção
+fecha.
 
-É um mapa por id, e não um único deslocamento: arrastar outra peça antes de a
-primeira assentar não pode fazer a primeira piscar de volta.
+A fila anda uma posição a cada resposta, porque o Livewire serializa as chamadas
+do componente e cada resposta traz para o desenho exatamente um dos
+deslocamentos. Se a chamada for **recusada** — a sessão pode ter mudado com o
+editor aberto —, a fila inteira é descartada: a peça volta para o que está
+gravado, que é a única posição que existe de verdade.
+
+O arrasto de **ponta de seta** fica de fora dessa espera, como já ficava da
+prévia durante o gesto: o deslocamento de uma ponta aplicado ao grupo moveria a
+seta inteira. Ali a posição continua aparecendo só quando o servidor responde.
 
 A verificação foi feita no navegador, com um amostrador por quadro sobre o
 `transform` do grupo e o `cx` do elemento. Antes da correção existia um quadro

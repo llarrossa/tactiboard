@@ -39,8 +39,12 @@ window.tactiboardCanvasDrag = () => ({
      * que o desenho ainda tem — e so pula para a nova quando o Livewire
      * responde, o que na tela aparece como um solavanco.
      *
-     * E um mapa por id, e nao um deslocamento so: arrastar outra peca antes de
-     * a primeira assentar nao pode fazer a primeira piscar de volta.
+     * Cada id guarda uma *fila*, e nao um deslocamento so. Duas razoes:
+     * arrastar outra peca antes de a primeira assentar nao pode fazer a
+     * primeira piscar de volta, e agarrar a mesma peca de novo antes da
+     * resposta empilha um segundo deslocamento sobre um desenho que ainda nao
+     * recebeu o primeiro. Como o Livewire serializa as chamadas do componente,
+     * cada resposta aplica exatamente um item da fila — e a fila anda junto.
      */
     settling: {},
 
@@ -117,15 +121,34 @@ window.tactiboardCanvasDrag = () => ({
 
         // O deslocamento sai do gesto e entra na espera: a peca nao se mexe da
         // largada ate o servidor confirmar onde ela para.
-        this.settling[id] = { part, x, y };
+        (this.settling[id] ??= []).push({ part, x, y });
 
-        const settled = () => delete this.settling[id];
+        this.$wire.moveElement(id, x, y, part).then(
+            // A resposta ja trouxe este deslocamento para o desenho; o que
+            // sobra na fila continua valendo.
+            () => this.landed(id),
+            // Recusada — a sessao pode ter mudado com o editor aberto. Segurar
+            // deslocamento nenhum: a peca volta para o que esta gravado, que e
+            // a unica posicao que existe de verdade.
+            () => delete this.settling[id],
+        );
+    },
 
-        // O mesmo tratamento para sucesso e para falha: se a chamada for
-        // recusada (a sessao pode ter mudado com o editor aberto), segurar o
-        // deslocamento deixaria a peca parada em um lugar que o servidor nao
-        // tem — melhor devolve-la ao que esta gravado.
-        this.$wire.moveElement(id, x, y, part).then(settled, settled);
+    /**
+     * Tira da fila o deslocamento que o servidor acabou de confirmar.
+     */
+    landed(id) {
+        const pending = this.settling[id];
+
+        if (pending === undefined) {
+            return;
+        }
+
+        pending.shift();
+
+        if (pending.length === 0) {
+            delete this.settling[id];
+        }
     },
 
     /*
@@ -134,17 +157,28 @@ window.tactiboardCanvasDrag = () => ({
      * e a posicao chega ao soltar.
      */
     offsetFor(id) {
+        let x = 0;
+        let y = 0;
+
+        // O que ja foi enviado e ainda nao voltou soma com o gesto em curso:
+        // agarrar a peca de novo antes da resposta parte de onde ela esta na
+        // tela, e nao da posicao que o desenho ainda carrega.
+        for (const pending of this.settling[id] ?? []) {
+            // Arrastar uma ponta de seta nao tem previa (ver acima), entao o
+            // deslocamento dela nao entra: aplicado no grupo, moveria a seta
+            // inteira.
+            if (pending.part === null) {
+                x += pending.x;
+                y += pending.y;
+            }
+        }
+
         if (this.draggingId === id && this.draggingPart === null) {
-            return `translate(${this.delta.x} ${this.delta.y})`;
+            x += this.delta.x;
+            y += this.delta.y;
         }
 
-        const waiting = this.settling[id];
-
-        if (waiting !== undefined && waiting.part === null) {
-            return `translate(${waiting.x} ${waiting.y})`;
-        }
-
-        return '';
+        return x === 0 && y === 0 ? '' : `translate(${x} ${y})`;
     },
 });
 
