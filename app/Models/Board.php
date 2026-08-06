@@ -8,6 +8,7 @@ use Database\Factories\BoardFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Board extends Model
 {
@@ -54,5 +55,13 @@ class Board extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<SharedLink, $this>
+     */
+    public function sharedLinks(): HasMany
+    {
+        return $this->hasMany(SharedLink::class);
     }
 }
