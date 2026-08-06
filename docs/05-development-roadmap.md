@@ -281,6 +281,8 @@ usar igualdade por conteúdo e não identidade estrita.
 
 # 6. Fase 3 — Editor Tático MVP
 
+**Status: concluída em 2026-08-05.**
+
 ## Objetivo
 
 Construir a principal funcionalidade do produto.
@@ -341,11 +343,63 @@ JSON.
 
 Usuário consegue:
 
-- Abrir uma prancheta.
-- Criar uma jogada visual.
-- Salvar.
-- Fechar.
-- Abrir novamente mantendo a configuração.
+- [x] Abrir uma prancheta.
+- [x] Criar uma jogada visual.
+- [x] Salvar.
+- [x] Fechar.
+- [x] Abrir novamente mantendo a configuração.
+
+---
+
+## Resultado
+
+| Item | Estado |
+|---|---|
+| Livewire | 4.3.5, componentes de classe em `app/Livewire` (ver `docs/04` §8.1) |
+| Campo | `<x-field>` em SVG, medidas oficiais da IFAB, coordenadas `0..1050` × `0..680` |
+| Elementos | Jogador (dois lados), bola, cone, texto e seta, cada um com componente Blade próprio |
+| Manipulação | Arrastar (Alpine), selecionar, remover e editar número, lado e texto |
+| Camadas | `UpdateBoardCanvasAction`; regras centralizadas em `App\Rules\CanvasRules` |
+| Enums | `CanvasElementType` e `PlayerTeam` |
+| Autorização | `BoardEditor` autoriza `view` no `mount()` e `update` em toda escrita |
+| Telas | O editor é a `boards.show`; `boards.edit` segue só com os metadados |
+| Testes | 140 testes, 498 asserções, todos passando |
+| Formatação | Laravel Pint sem violações |
+| Banco | Sem migrations novas — `canvas_data` já existia desde a Fase 2 |
+
+Nenhuma migration foi criada: a decisão da Fase 2 de guardar o canvas em JSON
+entregou exatamente o que prometia — o editor inteiro coube sem tocar no schema.
+
+### Decisões desta fase
+
+1. **Livewire 4, não 3.** O 4.3.5 é a versão corrente e é compatível com o
+   Laravel 12. Os componentes usam o modelo de classe, então a organização de
+   `docs/04` §4 e `docs/06` §3 continua valendo. Ver `docs/04` §8.1.
+2. **O Alpine passa a vir do Livewire.** O import manual do Breeze foi removido
+   para não rodar duas instâncias. Ver `docs/04` §8.2.
+3. **Coordenadas no espaço do campo**, não em pixels: `0..1050` × `0..680`, em
+   decímetros. O JSON não depende da resolução, e a responsividade da Fase 5 não
+   vai exigir reprocessar canvas gravado. Ver `docs/03` §6.1.
+4. **Todo elemento tem `id`.** Nada pode depender da posição na lista: remover um
+   elemento do meio reindexa o array e trocaria um elemento por outro na tela.
+5. **Validação do canvas fora de Form Request**, centralizada em `CanvasRules`.
+   É exceção consciente a `docs/06` §6, justificada em `docs/04` §8.3.
+6. **O editor é a `boards.show`.** A prancheta *é* o campo; `boards.edit` segue
+   com nome, descrição e categoria.
+7. **Toolbar é componente Blade, não Livewire.** Ela não guarda estado próprio,
+   só dispara ações no `BoardEditor` que a envolve.
+
+### Aprendizados
+
+- **`elements` é propriedade pública de componente Livewire**, então o navegador
+  pode devolver qualquer coisa nela. Um elemento malformado derrubava o render
+  inteiro; `CanvasRules::drawable()` filtra o que não é desenhável e a mensagem
+  de validação explica o resto.
+- **Prender cada ponta da seta em separado a deformava**: arrastá-la contra a
+  linha lateral encolhia a jogada. Mover a seta inteira limita o deslocamento,
+  não cada ponta.
+- **Autorização de rota não basta para um componente Livewire.** A sessão pode
+  mudar depois que o editor está aberto, então toda ação que escreve reverifica.
 
 ---
 

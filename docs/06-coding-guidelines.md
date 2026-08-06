@@ -174,6 +174,17 @@ Benefícios:
 - Validações reutilizáveis.
 - Código mais organizado.
 
+## Exceção: o canvas
+
+Decisão registrada na Fase 3 (2026-08-05).
+
+O salvamento do canvas acontece pelo Livewire, que valida dentro do componente e
+não passa por Form Request. As regras vivem em `App\Rules\CanvasRules`, classe
+única reutilizada por todo ponto que precise validar um canvas.
+
+O motivo e as consequências estão em `04-technical-architecture.md` §8.3. Essa é
+a única exceção; toda validação que chega por HTTP continua em Form Request.
+
 ---
 
 # 7. Actions
@@ -353,12 +364,18 @@ Utilizar para:
 
 Exemplos:
 
-- CanvasParserTest
+- `tests/Unit/Enums/` — os enums do domínio.
+- `tests/Unit/Rules/CanvasRulesTest.php` — as regras do canvas.
 
-O diretório `tests/Unit` está vazio até existir a primeira classe isolada para
-cobrir. Ele contém um `.gitkeep` porque a suíte **não roda** se o diretório
-declarado no `phpunit.xml` não existir — a execução aborta com
-`Test directory not found`.
+O `CanvasRulesTest` roda o validator de verdade, com `Validator::make`, em vez de
+apenas conferir o conteúdo do array de regras. Inspecionar strings não pegaria
+erro na expansão dos curingas (`elements.*.x`) nem na semântica de
+`exclude_if`/`exclude_unless`, que é justamente onde o schema é frágil.
+
+O diretório `tests/Unit` contém um `.gitkeep` porque a suíte **não roda** se o
+diretório declarado no `phpunit.xml` não existir — a execução aborta com
+`Test directory not found`. Manter o arquivo evita que isso volte caso os testes
+de unidade sejam movidos algum dia.
 
 ---
 
