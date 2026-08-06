@@ -27,3 +27,7 @@ Thumbs.db
 
 # Artefatos de verificacao no navegador (Playwright MCP)
 /.playwright-mcp
+
+# Capturas de tela de verificacao. Ja foram commitadas por engano duas vezes;
+# imagem que pertence ao produto vive em public/, nao na raiz.
+/*.png
