@@ -118,3 +118,106 @@ window.tactiboardCanvasDrag = () => ({
         return `translate(${this.delta.x} ${this.delta.y})`;
     },
 });
+
+/*
+ * Atalhos de teclado do editor.
+ *
+ * Vive junto do arrasto e pelo mesmo motivo: e interacao local, com uma unica
+ * chamada ao Livewire por atalho. As acoes sao as mesmas dos botoes — nenhum
+ * atalho faz algo que a interface nao ofereca de outra forma.
+ *
+ * O passo do movimento e dado em unidades de campo: 10 equivalem a 1 metro, e
+ * o Shift refina para 10 cm, que e o ajuste fino de quem esta encaixando uma
+ * peca em cima da linha.
+ */
+window.tactiboardEditorShortcuts = () => ({
+    STEP: 10,
+    FINE_STEP: 1,
+
+    /*
+     * Um atalho nao pode disparar enquanto o usuario digita: "d" dentro do
+     * campo de texto de uma observacao duplicaria o elemento em vez de
+     * escrever a letra.
+     *
+     * O modal e verificado pela classe que ele mesmo poe no <body> enquanto
+     * esta aberto. E acoplamento com o componente `x-modal`, mas e o unico
+     * sinal que ele publica — e sem isso um Delete atras da confirmacao
+     * apagaria um elemento que o usuario nao esta vendo.
+     */
+    shortcutsBlocked(event) {
+        if (document.body.classList.contains('overflow-y-hidden')) {
+            return true;
+        }
+
+        const target = event.target;
+
+        if (! target) {
+            return false;
+        }
+
+        return target.isContentEditable
+            || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName);
+    },
+
+    onShortcut(event) {
+        if (this.shortcutsBlocked(event)) {
+            return;
+        }
+
+        const withModifier = event.ctrlKey || event.metaKey;
+
+        // Salvar independe de selecao: e a acao da prancheta inteira.
+        if (withModifier && event.key.toLowerCase() === 's') {
+            event.preventDefault();
+            this.$wire.save();
+
+            return;
+        }
+
+        const selectedId = this.$wire.selectedId;
+
+        if (! selectedId) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            this.$wire.select(null);
+
+            return;
+        }
+
+        if (withModifier && event.key.toLowerCase() === 'd') {
+            event.preventDefault();
+            this.$wire.duplicateElement(selectedId);
+
+            return;
+        }
+
+        if (['Delete', 'Backspace'].includes(event.key)) {
+            // O Backspace volta uma pagina no historico em parte dos
+            // navegadores. Com um elemento selecionado ele remove, e so.
+            event.preventDefault();
+            this.$wire.removeElement(selectedId);
+
+            return;
+        }
+
+        const directions = {
+            ArrowUp: [0, -1],
+            ArrowDown: [0, 1],
+            ArrowLeft: [-1, 0],
+            ArrowRight: [1, 0],
+        };
+
+        if (event.key in directions) {
+            // Sem isso a seta rola a pagina junto, e o campo sai da tela
+            // enquanto o usuario posiciona a peca.
+            event.preventDefault();
+
+            const step = event.shiftKey ? this.FINE_STEP : this.STEP;
+            const [dx, dy] = directions[event.key];
+
+            this.$wire.moveElement(selectedId, dx * step, dy * step);
+        }
+    },
+});

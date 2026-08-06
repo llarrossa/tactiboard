@@ -1,9 +1,10 @@
 <div class="bg-white shadow-sm sm:rounded-lg p-4 sm:p-6"
-     x-data="{ saved: false, ...tactiboardCanvasDrag() }"
+     x-data="{ saved: false, ...tactiboardCanvasDrag(), ...tactiboardEditorShortcuts() }"
      x-on:canvas-saved.window="saved = true; setTimeout(() => saved = false, 2500)"
      x-on:pointermove.window="onMove($event)"
      x-on:pointerup.window="endDrag()"
-     x-on:pointercancel.window="cancelDrag()">
+     x-on:pointercancel.window="cancelDrag()"
+     x-on:keydown.window="onShortcut($event)">
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <x-editor-toolbar :count="count($elements)" />
@@ -53,6 +54,28 @@
         <x-element-properties :element="$elements[$selectedIndex]" :index="$selectedIndex" />
     @endif
 
+    {{-- Nenhum atalho faz algo que a interface nao ofereca por botao: eles
+         encurtam o caminho de quem ja conhece o editor, nao escondem funcao. --}}
+    <details class="mt-4 text-xs text-gray-500">
+        <summary class="cursor-pointer font-medium text-gray-600 hover:text-gray-900">
+            {{ __('Keyboard shortcuts') }}
+        </summary>
+
+        @php
+            $key = 'rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-sans text-[11px] text-gray-700';
+        @endphp
+
+        <ul class="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+            <li><kbd class="{{ $key }}">Ctrl / &#8984;</kbd> + <kbd class="{{ $key }}">S</kbd> &mdash; {{ __('Save board') }}</li>
+            <li><kbd class="{{ $key }}">Ctrl / &#8984;</kbd> + <kbd class="{{ $key }}">D</kbd> &mdash; {{ __('Duplicate') }}</li>
+            <li><kbd class="{{ $key }}">Delete</kbd> &mdash; {{ __('Remove element') }}</li>
+            <li><kbd class="{{ $key }}">Esc</kbd> &mdash; {{ __('Deselect') }}</li>
+            <li><kbd class="{{ $key }}">&larr; &uarr; &darr; &rarr;</kbd> &mdash; {{ __('Move the selected element') }}</li>
+            <li><kbd class="{{ $key }}">Shift</kbd> + <kbd class="{{ $key }}">&larr; &uarr; &darr; &rarr;</kbd> &mdash; {{ __('Move in fine steps') }}</li>
+            <li><kbd class="{{ $key }}">Tab</kbd> + <kbd class="{{ $key }}">Enter</kbd> &mdash; {{ __('Reach an element and select it') }}</li>
+        </ul>
+    </details>
+
     <x-modal name="confirm-clear-canvas" focusable maxWidth="md">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900">
@@ -68,7 +91,9 @@
                     {{ __('Cancel') }}
                 </x-secondary-button>
 
-                <x-danger-button wire:click="clearCanvas" x-on:click="$dispatch('close')">
+                {{-- type=button explicito: o x-danger-button nasce como submit,
+                     e aqui nao existe formulario para enviar. --}}
+                <x-danger-button type="button" wire:click="clearCanvas" x-on:click="$dispatch('close')">
                     {{ __('Clear field') }}
                 </x-danger-button>
             </div>
