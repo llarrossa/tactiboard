@@ -29,6 +29,16 @@ class BoardPolicy
         return $this->owns($user, $board);
     }
 
+    /**
+     * RN-001 lista "gerar links de compartilhamento" entre os poderes do
+     * proprietário. A regra tem nome próprio, e não reusa `update`, para que a
+     * intenção fique visível no `route:list`.
+     */
+    public function share(User $user, Board $board): bool
+    {
+        return $this->owns($user, $board);
+    }
+
     private function owns(User $user, Board $board): bool
     {
         return $user->id === $board->user_id;

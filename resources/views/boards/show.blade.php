@@ -18,6 +18,10 @@
                 <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board created.') }}</div>
             @elseif (session('status') === 'board-updated')
                 <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board updated.') }}</div>
+            @elseif (session('status') === 'board-shared')
+                <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board shared.') }}</div>
+            @elseif (session('status') === 'board-unshared')
+                <div class="mb-4 text-sm font-medium text-green-600">{{ __('Board is private again.') }}</div>
             @endif
 
             {{-- Esta tela e o editor: a prancheta e o campo. O formulario de
@@ -49,6 +53,8 @@
                     </div>
                 </dl>
             </div>
+
+            @include('boards.partials.share-panel', ['board' => $board])
 
             <div class="mt-6">
                 <a href="{{ route('dashboard') }}"
