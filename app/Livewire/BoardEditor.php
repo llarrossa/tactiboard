@@ -141,13 +141,9 @@ class BoardEditor extends Component
             return;
         }
 
+        // indexOf() so devolve indice de elemento que e array: um valor
+        // adulterado na lista nunca chega aqui, e nao precisa de guarda.
         $element = $this->elements[$index];
-
-        // Um elemento adulterado que nao seja sequer um array nao tem posicao
-        // para mover. Sair aqui evita quebrar o editor por causa dele.
-        if (! is_array($element)) {
-            return;
-        }
 
         $isArrowEnd = ($element['type'] ?? null) === CanvasElementType::Arrow->value
             && in_array($part, ['start', 'end'], true);
@@ -234,10 +230,6 @@ class BoardEditor extends Component
         }
 
         $element = $this->elements[$index];
-
-        if (! is_array($element)) {
-            return;
-        }
 
         $copy = $this->shifted($element, self::DUPLICATE_SHIFT, self::DUPLICATE_SHIFT);
 
