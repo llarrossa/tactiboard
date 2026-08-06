@@ -28,6 +28,15 @@
      preserveAspectRatio="xMidYMid meet"
      {{ $attributes->merge(['class' => 'block w-full h-auto select-none '.$class]) }}>
 
+    <defs>
+        {{-- A ponta da seta e definida uma vez e reaproveitada por todas as
+             setas do canvas. --}}
+        <marker id="tactiboard-arrowhead" viewBox="0 0 10 10"
+                refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#facc15" />
+        </marker>
+    </defs>
+
     <rect x="{{ -$margin }}" y="{{ -$margin }}"
           width="{{ $width + $margin * 2 }}" height="{{ $height + $margin * 2 }}" fill="#2e7d46" />
 

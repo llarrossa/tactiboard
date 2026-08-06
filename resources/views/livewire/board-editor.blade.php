@@ -3,23 +3,27 @@
      @canvas-saved.window="saved = true; setTimeout(() => saved = false, 2500)">
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="text-sm" role="status" aria-live="polite">
-            <span x-show="saved" x-cloak class="font-medium text-green-600">
-                {{ __('Board saved.') }}
+        <x-editor-toolbar />
+
+        <div class="flex items-center gap-3">
+            <span class="text-sm" role="status" aria-live="polite">
+                <span x-show="saved" x-cloak class="font-medium text-green-600">
+                    {{ __('Board saved.') }}
+                </span>
+
+                <span wire:loading wire:target="save" class="text-gray-500">
+                    {{ __('Saving...') }}
+                </span>
             </span>
 
-            <span wire:loading wire:target="save" class="text-gray-500">
-                {{ __('Saving...') }}
-            </span>
+            <button type="button"
+                    wire:click="save"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
+                    class="inline-flex items-center rounded-md bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50">
+                {{ __('Save board') }}
+            </button>
         </div>
-
-        <button type="button"
-                wire:click="save"
-                wire:loading.attr="disabled"
-                wire:target="save"
-                class="inline-flex items-center rounded-md bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50">
-            {{ __('Save board') }}
-        </button>
     </div>
 
     @error('elements')
@@ -33,5 +37,9 @@
         <p class="mb-4 text-sm text-red-600">{{ $errors->first() }}</p>
     @endif
 
-    <x-field />
+    <x-field>
+        @foreach ($drawable as $element)
+            <x-canvas.element :element="$element" />
+        @endforeach
+    </x-field>
 </div>

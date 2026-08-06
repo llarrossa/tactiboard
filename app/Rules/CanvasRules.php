@@ -103,6 +103,41 @@ class CanvasRules
     }
 
     /**
+     * Filtra os elementos que podem ser desenhados com seguranca.
+     *
+     * `elements` e propriedade publica do componente Livewire, entao o
+     * navegador pode devolver qualquer coisa nela. Sem esse filtro, um
+     * elemento malformado derruba a renderizacao do editor inteiro — o usuario
+     * receberia um erro de servidor no lugar da mensagem de validacao.
+     *
+     * A checagem reaproveita rules() em vez de repetir o schema: uma unica
+     * passada do validator diz quais indices estao quebrados.
+     *
+     * @param  array<int, mixed>  $elements
+     * @return array<int, array<string, mixed>>
+     */
+    public static function drawable(array $elements): array
+    {
+        $elements = array_values($elements);
+
+        $broken = [];
+
+        foreach (validator(['elements' => $elements], self::rules())->errors()->keys() as $key) {
+            $index = explode('.', $key)[1] ?? null;
+
+            if (is_numeric($index)) {
+                $broken[(int) $index] = true;
+            }
+        }
+
+        return array_values(array_filter(
+            $elements,
+            fn (int $index): bool => ! isset($broken[$index]),
+            ARRAY_FILTER_USE_KEY
+        ));
+    }
+
+    /**
      * Devolve os elementos com apenas as chaves que cada tipo usa.
      *
      * O canvas chega do navegador, entao pode vir com chaves a mais — seja por
