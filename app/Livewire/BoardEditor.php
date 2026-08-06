@@ -41,6 +41,15 @@ class BoardEditor extends Component
      */
     public ?string $selectedId = null;
 
+    /**
+     * Se existe edicao ainda nao gravada.
+     *
+     * E uma marca posta por quem altera o canvas, e nao uma comparacao com o
+     * que esta no banco: o clamp devolve float onde o registro gravado pode
+     * ter inteiro, e comparar os dois acusaria mudanca em elemento parado.
+     */
+    public bool $hasUnsavedChanges = false;
+
     public function mount(Board $board): void
     {
         // A rota que renderiza o editor ja passa pela BoardPolicy, mas o
@@ -154,6 +163,7 @@ class BoardEditor extends Component
 
         $this->elements[$index] = $element;
         $this->selectedId = $id;
+        $this->hasUnsavedChanges = true;
     }
 
     public function removeElement(string $id): void
@@ -169,6 +179,7 @@ class BoardEditor extends Component
         unset($this->elements[$index]);
 
         $this->elements = array_values($this->elements);
+        $this->hasUnsavedChanges = true;
 
         if ($this->selectedId === $id) {
             $this->selectedId = null;
@@ -186,6 +197,9 @@ class BoardEditor extends Component
     public function clearCanvas(): void
     {
         $this->authorize('update', $this->board);
+
+        // Um campo ja vazio nao muda com a limpeza, e nao ha o que avisar.
+        $this->hasUnsavedChanges = $this->hasUnsavedChanges || $this->elements !== [];
 
         $this->elements = [];
         $this->selectedId = null;
@@ -248,10 +262,16 @@ class BoardEditor extends Component
     /**
      * Valida a propriedade recem-editada no painel, para que o usuario veja o
      * problema na hora em vez de descobrir so ao salvar.
+     *
+     * A condicao cobre tambem a escrita na lista inteira (`elements`), e nao
+     * so os caminhos aninhados: o navegador pode substituir a propriedade de
+     * uma vez, e essa tambem e uma edicao por gravar.
      */
     public function updated(string $property): void
     {
-        if (str_starts_with($property, 'elements.')) {
+        if ($property === 'elements' || str_starts_with($property, 'elements.')) {
+            $this->hasUnsavedChanges = true;
+
             $this->validateOnly($property, CanvasRules::rules(), CanvasRules::messages());
         }
     }
@@ -272,6 +292,7 @@ class BoardEditor extends Component
         // A normalizacao pode arredondar coordenadas e descartar chaves; a tela
         // passa a mostrar exatamente o que foi gravado.
         $this->elements = $this->board->canvas_data['elements'];
+        $this->hasUnsavedChanges = false;
 
         $this->dispatch('canvas-saved');
     }
@@ -405,6 +426,7 @@ class BoardEditor extends Component
         $id = Str::random(10);
 
         $this->elements[] = ['id' => $id, ...$element];
+        $this->hasUnsavedChanges = true;
 
         return $id;
     }

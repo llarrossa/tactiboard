@@ -4,7 +4,11 @@
      x-on:pointermove.window="onMove($event)"
      x-on:pointerup.window="endDrag()"
      x-on:pointercancel.window="cancelDrag()"
-     x-on:keydown.window="onShortcut($event)">
+     x-on:keydown.window="onShortcut($event)"
+     {{-- Fechar a aba com jogada por gravar perde o trabalho, e o editor nao
+          tem desfazer. O navegador mostra a propria mensagem: o texto nao e
+          escolhido pela pagina. --}}
+     x-on:beforeunload.window="if ($wire.hasUnsavedChanges) { $event.preventDefault(); $event.returnValue = ''; }">
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <x-editor-toolbar :count="count($elements)" />
@@ -18,6 +22,12 @@
                 <span wire:loading wire:target="save" class="text-gray-500">
                     {{ __('Saving...') }}
                 </span>
+
+                @if ($hasUnsavedChanges)
+                    <span x-show="! saved" wire:loading.remove wire:target="save" class="font-medium text-amber-600">
+                        {{ __('Unsaved changes.') }}
+                    </span>
+                @endif
             </span>
 
             <button type="button"
