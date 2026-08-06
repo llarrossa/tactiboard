@@ -6,20 +6,21 @@ O elemento central é a **Prancheta Tática**: uma análise visual criada sobre 
 campo de futebol (ex.: "Saída de bola 4-3-3", "Pressão alta", "Escanteio
 ofensivo", "Exercício de treinamento").
 
-> **Status:** Fases 0, 1 e 2 concluídas — ambiente preparado, autenticação no ar
-> e gerenciamento de pranchetas funcionando (criar, listar, ver, editar, excluir).
-> O editor tático e o compartilhamento entram nas Fases 3 e 4.
+> **Status:** Fases 0, 1, 2 e 3 concluídas — ambiente preparado, autenticação no
+> ar, gerenciamento de pranchetas (criar, listar, ver, editar, excluir) e o
+> editor tático funcionando: campo, jogadores, bola, cone, texto e setas, com
+> arrastar, remover e salvar. O compartilhamento por link entra na Fase 4.
 > O roadmap completo está em [`docs/05-development-roadmap.md`](docs/05-development-roadmap.md).
 
 ---
 
 ## Stack
 
-Laravel 12 · PHP 8.4 · MySQL 8.4 · Blade · Livewire · Alpine.js · Tailwind CSS 4
-· Laravel Breeze · Pest 4 · Laravel Sail sobre Docker
+Laravel 12 · PHP 8.4 · MySQL 8.4 · Blade · Livewire 4 · Alpine.js · Tailwind
+CSS 4 · Laravel Breeze · Pest 4 · Laravel Sail sobre Docker
 
-O Livewire entra na Fase 3, com o editor tático — o CRUD de pranchetas não
-precisa de reatividade.
+O Alpine é fornecido pelo Livewire, não importado no `app.js` — as duas cópias
+na mesma página se atrapalham. Ver [`docs/04`](docs/04-technical-architecture.md) §8.2.
 
 ---
 

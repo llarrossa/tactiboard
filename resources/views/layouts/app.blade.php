@@ -13,6 +13,12 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        {{-- O Alpine desta aplicação vem do Livewire, e o Livewire só injeta os
+             próprios assets sozinho em páginas que renderizam um componente.
+             A navbar usa Alpine em toda página autenticada, então as diretivas
+             são declaradas aqui explicitamente. Ver docs/04 §8.2. --}}
+        @livewireStyles
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
@@ -32,5 +38,7 @@
                 {{ $slot }}
             </main>
         </div>
+
+        @livewireScripts
     </body>
 </html>

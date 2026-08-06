@@ -363,18 +363,102 @@ A primeira versão será construída utilizando:
 
 Decisão registrada na Fase 2 (2026-08-05).
 
-O Livewire **ainda não está instalado**. O CRUD de pranchetas da Fase 2 é um
-fluxo de formulários sem reatividade: controller fino, Form Request, Action e
-Blade resolvem inteiramente. Instalar o Livewire para isso adicionaria uma
-dependência sem necessidade real, contra `docs/04` §20 e `CLAUDE.md` §3, regra 5.
+O Livewire **não foi instalado na Fase 2**. O CRUD de pranchetas é um fluxo de
+formulários sem reatividade: controller fino, Form Request, Action e Blade
+resolvem inteiramente. Instalar o Livewire para isso adicionaria uma dependência
+sem necessidade real, contra `docs/04` §20 e `CLAUDE.md` §3, regra 5.
 
-Ele entra na **Fase 3**, com o editor tático — ali existe estado a sincronizar
+Ele entrou na **Fase 3**, com o editor tático — ali existe estado a sincronizar
 entre navegador e servidor, que é exatamente o problema que o Livewire resolve.
 Os componentes previstos (`BoardEditor`, `FieldCanvas`, `Toolbar`) pertencem a
 essa fase.
 
 O Alpine.js já está em uso desde a Fase 1, para interação local: o menu da
 navbar e os modais de confirmação.
+
+### Versão instalada e padrão de componente
+
+Decisão registrada na Fase 3 (2026-08-05).
+
+O Livewire instalado é o **4.3.5**, compatível com o Laravel 12
+(`illuminate/* ^10|^11|^12|^13`). O 3.x, previsto quando esta seção foi escrita,
+parou no `v3.8.3`; começar o editor numa major anterior à corrente adiaria uma
+atualização justamente no módulo mais complexo do produto.
+
+Os componentes usam o **modelo de classe** (`make:livewire --class`): classe em
+`app/Livewire/` e view em `resources/views/livewire/`. O padrão nativo do
+Livewire 4 é o *single-file component* em `resources/views/components/`, que
+**não foi adotado** — ele contraria a organização fixada em §4 deste documento e
+em `docs/06` §3. Manter o modelo de classe deixa as duas seções válidas sem
+alteração.
+
+---
+
+## 8.2 De onde vem o Alpine
+
+Decisão registrada na Fase 3 (2026-08-05).
+
+O Breeze importa e inicia o Alpine no `resources/js/app.js`. O Livewire 4 embute
+a própria cópia do Alpine e a inicializa. Com os dois, o navegador acusa
+*"Detected multiple instances of Alpine running"* e o dropdown da navbar e os
+modais de exclusão param de funcionar.
+
+O import manual foi **removido**: quem fornece o Alpine é o Livewire. O pacote
+`alpinejs` saiu do `package.json`, já que nada mais o importa.
+
+Um detalhe importante: o Livewire só injeta os próprios assets sozinho em
+páginas que renderizam algum componente. A navbar usa Alpine em **toda** página
+autenticada, então `layouts/app.blade.php` declara `@livewireStyles` e
+`@livewireScripts` explicitamente. O `layouts/guest.blade.php` não precisa —
+nenhuma tela de visitante usa Alpine hoje.
+
+`tests/Feature/LayoutAssetsTest.php` protege os dois lados dessa troca, porque a
+falha é silenciosa: a página carrega normalmente e só o comportamento morre.
+
+---
+
+## 8.3 Validação do canvas — exceção ao Form Request
+
+Decisão registrada na Fase 3 (2026-08-05).
+
+`docs/06` §6 determina que toda validação de entrada use Form Request. O
+salvamento do canvas **não passa por Form Request**: ele acontece pelo Livewire,
+que valida dentro do componente. Não é possível cumprir as duas regras ao mesmo
+tempo, e alternativa — expor uma rota HTTP só para salvar o canvas — contrariaria
+§8 deste documento, que define o Livewire como o canal de comunicação do editor
+com o backend.
+
+Para que a exceção não vire regra espalhada, todas as regras do canvas vivem em
+uma classe única e reutilizável, **`App\Rules\CanvasRules`**:
+
+| Membro | Responsabilidade |
+|---|---|
+| `FIELD_WIDTH`, `FIELD_HEIGHT` | Sistema de coordenadas, consumido também pelo desenho do campo |
+| `MAX_ELEMENTS`, `MAX_TEXT_LENGTH` | Limites do canvas |
+| `rules()`, `messages()` | Regras de validação e mensagens |
+| `normalize()` | Deixa em cada elemento apenas as chaves do seu tipo, arredonda e reindexa |
+| `clamp()` | Prende um ponto dentro do campo |
+| `drawable()` | Filtra o que pode ser desenhado com segurança |
+
+`app/Rules/` é o diretório padrão do Laravel para classes de validação
+(`make:rule`). Ele não aparece na lista de §4 porque aquela lista descreve a
+organização esperada, não um limite — `app/Providers` e `app/View` também estão
+no projeto sem constar lá.
+
+### Por que `drawable()` existe
+
+`elements` é propriedade pública de um componente Livewire, então o navegador
+pode devolver qualquer coisa nela. Sem filtro, um elemento malformado derruba a
+renderização do editor inteiro e o usuário recebe erro de servidor no lugar da
+mensagem de validação. `drawable()` reaproveita `rules()` numa única passada do
+validator e descarta os índices quebrados — o campo desenha o que dá, e a
+mensagem de erro explica o resto.
+
+### Autorização
+
+O `BoardEditor` é fronteira própria: autoriza `view` no `mount()` e `update` em
+toda ação que escreve. Ele **não** se apoia apenas na `BoardPolicy` presa à rota,
+porque uma sessão pode mudar depois que o editor já está aberto.
 
 ---
 

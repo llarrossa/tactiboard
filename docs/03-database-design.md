@@ -180,38 +180,92 @@ Criar uma tabela individual para cada elemento aumentaria a complexidade do MVP 
 
 ---
 
-## Exemplo de estrutura
+## Sistema de coordenadas
+
+Decisão registrada na Fase 3 (2026-08-05).
+
+As coordenadas são expressas no **próprio campo**, não em pixels de tela:
+
+| | |
+|---|---|
+| Origem | canto superior esquerdo do gramado |
+| Eixo x | `0` a `1050` |
+| Eixo y | `0` a `680` |
+| Unidade | decímetro — o campo tem as medidas oficiais da IFAB, 105 m × 68 m |
+
+O editor desenha o campo em SVG com esse sistema de coordenadas e deixa o CSS
+escalar o desenho. Assim o JSON **não depende da resolução da tela**: a mesma
+prancheta abre igual no notebook e no celular, e a responsividade da Fase 5 não
+exige reprocessar nenhum canvas já gravado.
+
+O `viewBox` do SVG é maior que o gramado para caber as traves e uma margem de
+grama. Isso não altera o sistema de coordenadas dos elementos, que permanece
+`0..1050` por `0..680`. Um elemento arrastado para fora não vira erro: ele para
+na borda.
+
+Os limites são definidos em `App\Rules\CanvasRules` (`FIELD_WIDTH` e
+`FIELD_HEIGHT`), consumidos tanto pelo desenho quanto pela validação.
+
+---
+
+## Schema dos elementos
+
+Esta seção é a **referência oficial do formato persistido**.
+
+`canvas_data` é sempre um objeto com uma única chave `elements`, cuja lista
+contém no máximo **100** elementos.
+
+Todo elemento tem:
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `id` | string (até 36) | Identificador do elemento dentro da prancheta |
+| `type` | string | `player`, `ball`, `cone`, `text` ou `arrow` |
+
+O `id` é gerado ao criar o elemento e o acompanha por toda a vida dele. Ele
+existe porque **nenhuma operação pode depender da posição na lista**: remover um
+elemento do meio reindexa o array, e o editor trocaria um elemento por outro na
+tela. Os ids são únicos dentro da prancheta.
+
+Os demais campos dependem do tipo:
+
+| Tipo | Campos próprios |
+|---|---|
+| `player` | `x`, `y`, `team` (`home` \| `away`), `number` (1 a 99) |
+| `ball` | `x`, `y` |
+| `cone` | `x`, `y` |
+| `text` | `x`, `y`, `content` (até 120 caracteres) |
+| `arrow` | `start` e `end`, cada um `{ "x": …, "y": … }` |
+
+A seta é o único tipo **não posicional**: ela é definida por dois pontos e não
+tem `x`/`y` soltos. Jogador do time e adversário são o mesmo tipo `player`,
+distinguidos por `team` — são a mesma peça em cores diferentes, não dois
+conceitos.
+
+Um elemento guarda **apenas** as chaves do seu tipo. Chave que sobrou de uma
+edição anterior é descartada na gravação, não persistida.
 
 ```json
 {
     "elements": [
+        { "id": "k3Ba9xQ2mZ", "type": "player", "team": "home", "number": 9, "x": 200, "y": 350 },
+        { "id": "p7Tc1vLd4R", "type": "player", "team": "away", "number": 4, "x": 800, "y": 350 },
+        { "id": "b2Nf8sWq0E", "type": "ball", "x": 525, "y": 340 },
+        { "id": "c5Hj3yUr6T", "type": "cone", "x": 300, "y": 200 },
+        { "id": "t9Zx4mKp1A", "type": "text", "content": "Atacar profundidade", "x": 400, "y": 200 },
         {
-            "type": "player",
-            "team": "home",
-            "number": 9,
-            "x": 200,
-            "y": 350
-        },
-        {
+            "id": "a1Qw6nJb8S",
             "type": "arrow",
-            "start": {
-                "x": 200,
-                "y": 350
-            },
-            "end": {
-                "x": 300,
-                "y": 250
-            }
-        },
-        {
-            "type": "text",
-            "content": "Atacar profundidade",
-            "x": 400,
-            "y": 200
+            "start": { "x": 200, "y": 350 },
+            "end": { "x": 300, "y": 250 }
         }
     ]
 }
 ```
+
+As coordenadas são gravadas com **uma casa decimal**: o arrasto produz frações
+longas de pixel convertido, e um décimo de metro já é mais fino que o olho no
+campo.
 
 ---
 

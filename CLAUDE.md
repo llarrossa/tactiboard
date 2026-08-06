@@ -99,14 +99,15 @@ silenciosamente.
 ```
 app/
 ├── Actions/       # Operações de negócio ("o que o usuário quer fazer")
-├── Enums/         # BoardCategory, BoardVisibility
+├── Enums/         # BoardCategory, BoardVisibility, CanvasElementType, PlayerTeam
 ├── Http/
 │   ├── Controllers/
-│   ├── Requests/  # Toda validação de entrada
+│   ├── Requests/  # Toda validação de entrada vinda de HTTP
 │   └── Resources/
-├── Livewire/      # Componentes interativos
+├── Livewire/      # Componentes interativos (classe + view em views/livewire)
 ├── Models/
 ├── Policies/      # BoardPolicy
+├── Rules/         # CanvasRules — regras do canvas, que não passa por Form Request
 ├── Services/      # Só para lógica complexa / integração externa
 ├── Jobs/ Events/ Listeners/ Notifications/
 ```
@@ -325,17 +326,38 @@ mensagem, não só a primeira linha.
 
 ## 8. Estado Atual e Roadmap
 
-**Estado atual (2026-08-05):** **Fases 0, 1 e 2 concluídas.** A aplicação Laravel
-12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está conectado e
-o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
+**Estado atual (2026-08-05):** **Fases 0, 1, 2 e 3 concluídas.** A aplicação
+Laravel 12.65.0 roda via Sail (PHP 8.4, MySQL 8.4), o banco `tactiboard` está
+conectado e o projeto está versionado em `git@github.com:llarrossa/tactiboard.git`.
 
 A Fase 1 entregou a fundação: autenticação com Breeze, layout base com navbar,
 dashboard e perfil. A Fase 2 entregou o núcleo do produto: tabela `boards`, model
-`Board`, CRUD completo e `BoardPolicy` aplicando a RN-001. Tudo em português. A
-suíte tem **79 testes / 228 asserções**, todos passando, e o Pint está limpo.
+`Board`, CRUD completo e `BoardPolicy` aplicando a RN-001. A Fase 3 entregou o
+editor tático: campo em SVG, os seis elementos, arrastar/selecionar/remover e a
+persistência do canvas. Tudo em português. A suíte tem **140 testes / 498
+asserções**, todos passando, e o Pint está limpo.
 
-Ainda **não** existem editor tático nem compartilhamento. Próximo passo:
-**Fase 3** (editor: campo, elementos, manipulação, persistência do canvas).
+Ainda **não** existe compartilhamento. Próximo passo: **Fase 4**
+(`shared_links`, link público, visualização sem cadastro).
+
+Pontos da Fase 3 que valem lembrar:
+- **Livewire 4.3.5**, com componentes de **classe** (`make:livewire --class`) em
+  `app/Livewire`. O padrão *single-file* do Livewire 4 foi deliberadamente não
+  adotado — ele contraria a organização de `docs/04` §4. Ver `docs/04` §8.1.
+- O **Alpine vem do Livewire**, não do `app.js`. Reinstalar o Breeze ou voltar a
+  importar `alpinejs` faz duas instâncias correrem e quebra navbar e modais. O
+  `layouts/app.blade.php` declara `@livewireStyles`/`@livewireScripts` porque o
+  Livewire só se injeta sozinho em páginas com componente. Ver `docs/04` §8.2.
+- O canvas usa **coordenadas do campo** (`0..1050` × `0..680`, em decímetros),
+  não pixels. Todo elemento tem **`id`** e guarda só as chaves do próprio tipo.
+  O schema oficial está em `docs/03` §6.1.
+- **`App\Rules\CanvasRules` é o ponto único de verdade do canvas** — regras,
+  mensagens, limites do campo, normalização e filtro de desenho. A validação do
+  canvas **não** usa Form Request; é exceção registrada em `docs/04` §8.3.
+- **`elements` é propriedade pública do Livewire**: o navegador pode devolver
+  qualquer coisa nela. Toda ação que escreve reverifica a Policy, e o render
+  passa por `CanvasRules::drawable()`.
+- O **editor é a `boards.show`**; `boards.edit` segue só com os metadados.
 
 Pontos das fases anteriores que valem lembrar:
 - A validação vive em **Form Requests**, não nos controllers do Breeze — ver
@@ -344,8 +366,6 @@ Pontos das fases anteriores que valem lembrar:
   para o 3. Não recriar `tailwind.config.js` nem `postcss.config.js`.
 - A **verificação de e-mail** está instalada mas inativa (o `User` não implementa
   `MustVerifyEmail`). Está fora do MVP.
-- **Livewire ainda não está instalado.** Ele entra na Fase 3, com o editor — o
-  CRUD da Fase 2 não precisava. Ver `docs/04` §8.1.
 - `canvas_data` **nunca é `null`**: nasce `{"elements": []}` pelo `$attributes` do
   model. E o MySQL **não preserva a ordem das chaves** em coluna `json` — nenhuma
   lógica pode depender dela. Ver `docs/03` §6.1.
@@ -368,7 +388,7 @@ Pontos das fases anteriores que valem lembrar:
 | **0** ✅ | Preparação: criar projeto Laravel, Sail + Docker, banco, Git, Pest, Tailwind | **Concluída** — app roda via Sail, banco conectado, suíte Pest executando, projeto versionado |
 | **1** ✅ | Fundação: auth (Breeze), layout base, navbar, dashboard, perfil | **Concluída** — usuário cria conta, entra, acessa dashboard, sai |
 | **2** ✅ | Pranchetas: CRUD, migration `boards`, model, `BoardPolicy`, testes | **Concluída** — usuário gerencia as próprias pranchetas |
-| **3** | Editor tático: campo, elementos, manipulação, persistência JSON | Usuário cria jogada, salva, reabre mantendo o estado |
+| **3** ✅ | Editor tático: campo, elementos, manipulação, persistência JSON | **Concluída** — usuário cria jogada, salva, reabre mantendo o estado |
 | **4** | Compartilhamento: `shared_links`, link público, visualização | Pessoa sem conta acessa a análise pelo link, sem editar |
 | **5** | UX: toolbar, atalhos, duplicar, limpar campo, responsividade | Editor confortável para uso real |
 | **6** | Qualidade: cobertura de testes, revisão, README e docs | Projeto pronto para ambiente real |
@@ -481,6 +501,18 @@ Decisões confirmadas na Fase 2:
 | Rota de listagem | **O dashboard é a lista**, sem `/boards` de índice | RF-004 pede a lista no dashboard; duas telas com a mesma função seria duplicação |
 | Resposta a acesso negado | **403** | Padrão do Laravel e atende a RN-001. Revela a existência do ID; se incomodar, a Policy pode devolver 404 |
 | Paginação | **12 por página** | O índice em `created_at` já existia para ordenar |
+
+Decisões confirmadas na Fase 3:
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| Versão do Livewire | **4.3.5**, componentes de classe | É a versão corrente e compatível com o Laravel 12. O modelo de classe mantém `app/Livewire` como `docs/04` §4 define; o *single-file* do 4 não foi adotado |
+| Origem do Alpine | **Fornecido pelo Livewire** | Import manual do Breeze + Alpine do Livewire = duas instâncias e navbar/modais quebrados. Ver `docs/04` §8.2 |
+| Coordenadas do canvas | **Espaço do campo**, `0..1050` × `0..680`, em decímetros | Independe da resolução; a responsividade da Fase 5 não exigirá reprocessar canvas gravado |
+| Identidade do elemento | **`id` próprio em cada elemento** | Nada pode depender da posição na lista: remover do meio reindexa e trocaria um elemento por outro |
+| Validação do canvas | **`App\Rules\CanvasRules`, fora de Form Request** | O Livewire valida no componente. Exceção consciente a `docs/06` §6, justificada em `docs/04` §8.3 |
+| Onde vive o editor | **`boards.show`** | A prancheta *é* o campo. `boards.edit` segue com nome, descrição e categoria |
+| Toolbar | **Componente Blade, não Livewire** | Não guarda estado próprio; só dispara ações no `BoardEditor` que a envolve |
 
 Nenhuma decisão em aberto no momento. Ao surgir uma nova, registrar aqui e no
 documento correspondente em `/docs`, com motivo e impactos (`docs/07` §17).
