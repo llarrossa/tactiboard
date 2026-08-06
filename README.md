@@ -6,11 +6,10 @@ O elemento central é a **Prancheta Tática**: uma análise visual criada sobre 
 campo de futebol (ex.: "Saída de bola 4-3-3", "Pressão alta", "Escanteio
 ofensivo", "Exercício de treinamento").
 
-> **Status:** MVP completo. As fases 0 a 5 estão concluídas — ambiente, autenticação,
-> gerenciamento de pranchetas, editor tático, compartilhamento por link público e
-> as melhorias de experiência do editor. A Fase 6 (qualidade e documentação) está
-> em andamento. O roadmap completo está em
-> [`docs/05-development-roadmap.md`](docs/05-development-roadmap.md).
+> **Status:** MVP completo. As fases 0 a 6 estão concluídas — ambiente, autenticação,
+> gerenciamento de pranchetas, editor tático, compartilhamento por link público,
+> as melhorias de experiência do editor e a fase de qualidade. O roadmap completo
+> está em [`docs/05-development-roadmap.md`](docs/05-development-roadmap.md).
 
 ---
 
