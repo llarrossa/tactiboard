@@ -20,6 +20,13 @@ use Livewire\Component;
  */
 class BoardEditor extends Component
 {
+    /**
+     * Deslocamento da copia em relacao ao original, em unidades de campo
+     * (3 metros). Longe o bastante para a copia nao esconder a origem, perto
+     * o bastante para continuar sendo a mesma jogada.
+     */
+    private const DUPLICATE_SHIFT = 30;
+
     public Board $board;
 
     /**
@@ -133,31 +140,16 @@ class BoardEditor extends Component
             return;
         }
 
-        if (($element['type'] ?? null) === CanvasElementType::Arrow->value) {
-            if (in_array($part, ['start', 'end'], true)) {
-                $element[$part] = CanvasRules::clamp(
-                    (float) ($element[$part]['x'] ?? 0) + $dx,
-                    (float) ($element[$part]['y'] ?? 0) + $dy,
-                );
-            } else {
-                // Mover a seta inteira limita o proprio deslocamento, e nao
-                // cada ponta em separado: prender as pontas uma a uma faria a
-                // seta encolher ao encostar na borda, mudando a jogada que o
-                // usuario desenhou.
-                [$dx, $dy] = $this->fittedShift($element, $dx, $dy);
+        $isArrowEnd = ($element['type'] ?? null) === CanvasElementType::Arrow->value
+            && in_array($part, ['start', 'end'], true);
 
-                foreach (['start', 'end'] as $end) {
-                    $element[$end] = CanvasRules::clamp(
-                        (float) ($element[$end]['x'] ?? 0) + $dx,
-                        (float) ($element[$end]['y'] ?? 0) + $dy,
-                    );
-                }
-            }
+        if ($isArrowEnd) {
+            $element[$part] = CanvasRules::clamp(
+                (float) ($element[$part]['x'] ?? 0) + $dx,
+                (float) ($element[$part]['y'] ?? 0) + $dy,
+            );
         } else {
-            $element = [...$element, ...CanvasRules::clamp(
-                (float) ($element['x'] ?? 0) + $dx,
-                (float) ($element['y'] ?? 0) + $dy,
-            )];
+            $element = $this->shifted($element, $dx, $dy);
         }
 
         $this->elements[$index] = $element;
@@ -180,6 +172,56 @@ class BoardEditor extends Component
 
         if ($this->selectedId === $id) {
             $this->selectedId = null;
+        }
+    }
+
+    /**
+     * Cria uma copia do elemento, deslocada para nao esconder o original.
+     *
+     * A selecao passa para a copia: duplicar de novo empilha a jogada em
+     * cascata, que e o que o usuario espera ao repetir o atalho.
+     */
+    public function duplicateElement(string $id): void
+    {
+        $index = $this->indexOf($id);
+
+        if ($index === null) {
+            return;
+        }
+
+        $element = $this->elements[$index];
+
+        if (! is_array($element)) {
+            return;
+        }
+
+        $copy = $this->shifted($element, self::DUPLICATE_SHIFT, self::DUPLICATE_SHIFT);
+
+        // Junto da borda o deslocamento e invertido: preso pelo limite do
+        // campo, a copia pararia exatamente sobre o elemento de origem e o
+        // usuario nao veria nada acontecer.
+        if ($this->positionOf($copy) === $this->positionOf($element)) {
+            $copy = $this->shifted($element, -self::DUPLICATE_SHIFT, -self::DUPLICATE_SHIFT);
+        }
+
+        // O id nao se copia: ele identifica o elemento, e dois elementos com o
+        // mesmo id fariam o arrasto mover a peca errada.
+        unset($copy['id']);
+
+        // Dois jogadores do mesmo lado com o mesmo numero seriam a mesma peca
+        // duas vezes no campo. A copia recebe o proximo numero livre.
+        $side = ($copy['type'] ?? null) === CanvasElementType::Player->value
+            ? PlayerTeam::tryFrom($copy['team'] ?? '')
+            : null;
+
+        if ($side !== null) {
+            $copy['number'] = $this->nextNumber($side);
+        }
+
+        $copyId = $this->push($copy);
+
+        if ($copyId !== null) {
+            $this->selectedId = $copyId;
         }
     }
 
@@ -265,9 +307,68 @@ class BoardEditor extends Component
     }
 
     /**
+     * Desloca o elemento inteiro, preso dentro do campo.
+     *
+     * Mover a seta limita o proprio deslocamento, e nao cada ponta em
+     * separado: prender as pontas uma a uma faria a seta encolher ao encostar
+     * na borda, mudando a jogada que o usuario desenhou.
+     *
+     * @param  array<string, mixed>  $element
+     * @return array<string, mixed>
+     */
+    private function shifted(array $element, float $dx, float $dy): array
+    {
+        if (($element['type'] ?? null) !== CanvasElementType::Arrow->value) {
+            return [...$element, ...CanvasRules::clamp(
+                (float) ($element['x'] ?? 0) + $dx,
+                (float) ($element['y'] ?? 0) + $dy,
+            )];
+        }
+
+        [$dx, $dy] = $this->fittedShift($element, $dx, $dy);
+
+        foreach (['start', 'end'] as $end) {
+            $element[$end] = CanvasRules::clamp(
+                (float) ($element[$end]['x'] ?? 0) + $dx,
+                (float) ($element[$end]['y'] ?? 0) + $dy,
+            );
+        }
+
+        return $element;
+    }
+
+    /**
+     * Onde o elemento esta, no formato do proprio tipo. Serve para comparar
+     * duas versoes do mesmo elemento sem depender das demais chaves.
+     *
+     * As coordenadas sao convertidas para float de proposito: um canvas
+     * gravado pode trazer `100` onde o clamp devolve `100.0`, e a comparacao
+     * estrita diria que o elemento se moveu quando ele esta parado.
+     *
+     * @param  array<string, mixed>  $element
+     * @return array<int, float>
+     */
+    private function positionOf(array $element): array
+    {
+        if (($element['type'] ?? null) === CanvasElementType::Arrow->value) {
+            return [
+                (float) ($element['start']['x'] ?? 0),
+                (float) ($element['start']['y'] ?? 0),
+                (float) ($element['end']['x'] ?? 0),
+                (float) ($element['end']['y'] ?? 0),
+            ];
+        }
+
+        return [(float) ($element['x'] ?? 0), (float) ($element['y'] ?? 0)];
+    }
+
+    /**
+     * Acrescenta um elemento ao canvas e devolve o id dele, ou null quando o
+     * limite da prancheta ja foi atingido.
+     *
      * @param  array<string, mixed>  $element
      */
-    private function push(array $element): void
+    private function push(array $element): ?string
     {
         $this->authorize('update', $this->board);
 
@@ -276,12 +377,16 @@ class BoardEditor extends Component
                 'max' => CanvasRules::MAX_ELEMENTS,
             ]));
 
-            return;
+            return null;
         }
 
         // O id acompanha o elemento por toda a vida dele: e o que permite
         // arrastar e remover sem depender da posicao na lista.
-        $this->elements[] = ['id' => Str::random(10), ...$element];
+        $id = Str::random(10);
+
+        $this->elements[] = ['id' => $id, ...$element];
+
+        return $id;
     }
 
     /**
@@ -293,18 +398,21 @@ class BoardEditor extends Component
         $used = [];
 
         foreach ($this->elements as $element) {
-            if (($element['type'] ?? null) === CanvasElementType::Player->value
+            if (is_array($element)
+                && ($element['type'] ?? null) === CanvasElementType::Player->value
                 && ($element['team'] ?? null) === $team->value) {
                 $used[] = (int) ($element['number'] ?? 0);
             }
         }
 
-        for ($number = 1; $number < 99; $number++) {
+        for ($number = 1; $number <= 99; $number++) {
             if (! in_array($number, $used, strict: true)) {
                 return $number;
             }
         }
 
+        // Os 99 numeros do lado estao em campo. Repetir o ultimo e melhor do
+        // que recusar o elemento: o usuario ajusta o numero no painel.
         return 99;
     }
 
