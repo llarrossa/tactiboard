@@ -4,36 +4,7 @@ use App\Livewire\BoardEditor;
 use App\Models\Board;
 use App\Models\User;
 use App\Rules\CanvasRules;
-use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-
-/**
- * @param  array<int, array<string, mixed>>  $elements
- */
-function editorWith(array $elements, ?User $user = null): Testable
-{
-    $user ??= User::factory()->create();
-
-    return Livewire::actingAs($user)->test(BoardEditor::class, [
-        'board' => Board::factory()->for($user)->create(['canvas_data' => ['elements' => $elements]]),
-    ]);
-}
-
-/**
- * @return array<string, mixed>
- */
-function ball(string $id = 'b1', float $x = 500, float $y = 300): array
-{
-    return ['id' => $id, 'type' => 'ball', 'x' => $x, 'y' => $y];
-}
-
-/**
- * @return array<string, mixed>
- */
-function arrow(string $id = 'a1'): array
-{
-    return ['id' => $id, 'type' => 'arrow', 'start' => ['x' => 100, 'y' => 100], 'end' => ['x' => 200, 'y' => 200]];
-}
 
 test('arrastar um elemento muda a posicao dele', function () {
     $editor = editorWith([ball()])->call('moveElement', 'b1', 40, -25);

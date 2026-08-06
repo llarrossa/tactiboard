@@ -417,10 +417,17 @@ entropia — inviável de adivinhar por tentativa, e o índice único garante qu
 colisão vire erro de gravação em vez de vazamento silencioso de prancheta.
 
 O token **é reaproveitado** quando o dono compartilha de novo: recompartilhar não
-pode invalidar a URL que ele já enviou a outras pessoas. A consequência é que um
-link vazado continua sendo o mesmo ao recompartilhar — tornar a prancheta privada
-derruba o acesso, mas não aposenta o token. Um botão de gerar link novo resolve
-e é candidato à Fase 5; RF-014 não o pede.
+pode invalidar a URL que ele já enviou a outras pessoas.
+
+A consequência disso era que um link vazado continuava sendo o mesmo — tornar a
+prancheta privada derruba o acesso, mas não aposenta o token. A **Fase 5**
+(2026-08-06) fechou essa lacuna com `RotateSharedLinkAction`: o dono gera um
+endereço novo, e o anterior deixa de abrir na hora. A operação troca apenas o
+token; `visibility` não é tocada, porque os dois mecanismos seguem separados
+(§6.2).
+
+O formato do token vive em `SharedLink::newToken()` — tanto criar quanto trocar
+um link precisam dele, e a decisão desta seção deve ter um lugar só.
 
 ---
 

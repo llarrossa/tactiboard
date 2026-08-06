@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * Link publico de uma prancheta (RF-014).
@@ -31,6 +32,23 @@ class SharedLink extends Model
         'token',
         'expires_at',
     ];
+
+    /**
+     * Comprimento do token. 32 caracteres alfanumericos nao expoem o id
+     * interno e sao inviaveis de adivinhar por tentativa (docs/03 §7.1).
+     */
+    private const TOKEN_LENGTH = 32;
+
+    /**
+     * Gera um token novo.
+     *
+     * O formato vive aqui, e nao nas Actions, porque tanto criar quanto trocar
+     * um link precisam dele — e a decisao de docs/03 §7.1 deve ter um lugar so.
+     */
+    public static function newToken(): string
+    {
+        return Str::random(self::TOKEN_LENGTH);
+    }
 
     /**
      * @return array<string, string>

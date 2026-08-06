@@ -21,12 +21,21 @@
     O viewBox e maior que o gramado para caber as traves e uma margem de grama;
     isso nao muda o sistema de coordenadas dos elementos, que permanece
     0..1050 no eixo x e 0..680 no eixo y.
+
+    A altura maxima de 70vh existe para que a toolbar e o botao de salvar
+    continuem visiveis junto com o campo: numa tela baixa, um campo que ocupa
+    toda a largura empurraria os controles para fora da area visivel.
+
+    A largura maxima de 105vh acompanha a altura na mesma proporcao do viewBox
+    (1110 por 740, ou seja 1,5). Sem ela, o elemento continuaria com a largura
+    inteira quando a altura fosse limitada, e sobrariam faixas vazias dos dois
+    lados do gramado dentro do cartao.
 --}}
 
 <svg viewBox="{{ -$margin }} {{ -$margin }} {{ $width + $margin * 2 }} {{ $height + $margin * 2 }}"
      xmlns="http://www.w3.org/2000/svg"
      preserveAspectRatio="xMidYMid meet"
-     {{ $attributes->merge(['class' => 'block w-full h-auto select-none '.$class]) }}>
+     {{ $attributes->merge(['class' => 'mx-auto block w-full h-auto max-h-[70vh] max-w-[105vh] select-none '.$class]) }}>
 
     <defs>
         {{-- A ponta da seta e definida uma vez e reaproveitada por todas as

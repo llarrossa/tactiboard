@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/boards/{board}', [BoardController::class, 'destroy'])->name('boards.destroy')->can('delete', 'board');
 
     Route::post('/boards/{board}/share', [SharedLinkController::class, 'store'])->name('boards.share.store')->can('share', 'board');
+    Route::put('/boards/{board}/share', [SharedLinkController::class, 'update'])->name('boards.share.update')->can('share', 'board');
     Route::delete('/boards/{board}/share', [SharedLinkController::class, 'destroy'])->name('boards.share.destroy')->can('share', 'board');
 });
 

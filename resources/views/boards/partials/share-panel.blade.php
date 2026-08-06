@@ -56,14 +56,50 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('boards.share.destroy', $board) }}" class="mt-4">
-            @csrf
-            @method('DELETE')
+        <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <form method="POST" action="{{ route('boards.share.destroy', $board) }}">
+                @csrf
+                @method('DELETE')
 
-            <button type="submit" class="text-sm text-gray-600 underline hover:text-gray-900">
-                {{ __('Stop sharing') }}
+                <button type="submit" class="text-sm text-gray-600 underline hover:text-gray-900">
+                    {{ __('Stop sharing') }}
+                </button>
+            </form>
+
+            {{-- Deixar de compartilhar derruba o acesso, mas nao aposenta o
+                 token: recompartilhar devolve a mesma URL (docs/03 §7.1). Este
+                 e o caminho para quando o endereco em si vazou. --}}
+            <button type="button"
+                    x-on:click="$dispatch('open-modal', 'confirm-link-rotation')"
+                    class="text-sm text-gray-600 underline hover:text-gray-900">
+                {{ __('Generate a new link') }}
             </button>
-        </form>
+        </div>
+
+        <x-modal name="confirm-link-rotation" focusable maxWidth="md">
+            <form method="POST" action="{{ route('boards.share.update', $board) }}" class="p-6">
+                @csrf
+                @method('PUT')
+
+                <h2 class="text-lg font-medium text-gray-900">
+                    {{ __('Generate a new link?') }}
+                </h2>
+
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ __('The current address stops working right away. Anyone you already sent it to will need the new link.') }}
+                </p>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">
+                        {{ __('Cancel') }}
+                    </x-secondary-button>
+
+                    <x-danger-button>
+                        {{ __('Generate a new link') }}
+                    </x-danger-button>
+                </div>
+            </form>
+        </x-modal>
     @else
         <p class="mt-1 text-sm text-gray-600">
             {{ __('This board is private. Share it to get a link that anyone can open, without an account.') }}

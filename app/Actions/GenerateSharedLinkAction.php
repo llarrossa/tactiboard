@@ -6,16 +6,9 @@ use App\Enums\BoardVisibility;
 use App\Models\Board;
 use App\Models\SharedLink;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class GenerateSharedLinkAction
 {
-    /**
-     * Comprimento do token. 32 caracteres alfanumericos nao expoem o id
-     * interno e sao inviaveis de adivinhar por tentativa (docs/03 §7.1).
-     */
-    private const TOKEN_LENGTH = 32;
-
     /**
      * Compartilha a prancheta (RF-014).
      *
@@ -39,7 +32,7 @@ class GenerateSharedLinkAction
             $link = $board->sharedLinks()->first();
 
             if ($link === null) {
-                $link = new SharedLink(['token' => Str::random(self::TOKEN_LENGTH)]);
+                $link = new SharedLink(['token' => SharedLink::newToken()]);
 
                 $link->board()->associate($board);
                 $link->save();

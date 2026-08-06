@@ -1,6 +1,10 @@
 <?php
 
+use App\Livewire\BoardEditor;
+use App\Models\Board;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
 use Tests\TestCase;
 
 /*
@@ -54,4 +58,42 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/*
+ * Ajudantes do canvas.
+ *
+ * Vivem aqui, e nao dentro de um arquivo de teste, porque varios arquivos os
+ * usam: monta o editor sobre uma prancheta do proprio usuario e descreve
+ * elementos validos sem repetir o schema de docs/03 secao 6.1 em cada teste.
+ */
+
+/**
+ * @param  array<int, array<string, mixed>>  $elements
+ */
+function editorWith(array $elements, ?User $user = null): Testable
+{
+    $user ??= User::factory()->create();
+
+    return Livewire\Livewire::actingAs($user)->test(BoardEditor::class, [
+        'board' => Board::factory()->for($user)->create([
+            'canvas_data' => ['elements' => $elements],
+        ]),
+    ]);
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function ball(string $id = 'b1', float $x = 500, float $y = 300): array
+{
+    return ['id' => $id, 'type' => 'ball', 'x' => $x, 'y' => $y];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function arrow(string $id = 'a1'): array
+{
+    return ['id' => $id, 'type' => 'arrow', 'start' => ['x' => 100, 'y' => 100], 'end' => ['x' => 200, 'y' => 200]];
 }
